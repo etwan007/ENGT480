@@ -30,8 +30,11 @@ with this receiver firmware.
 
 TX1 and TX2 use the same three-byte ESP-NOW format and do not need reflashing
 for this update. A fresh radio packet containing `0xFFFF` already reports an
-encoder transaction failure in their existing firmware. This does not identify
-which I2C operation failed. Transmitter send-result counters are not part of v1.
+encoder transaction failure in their existing firmware. TX1 now has an optional diagnostic firmware update: its local USB output
+records encoder duration/failures, send-call errors, and delivery callbacks. See
+[TX1 diagnostics](Transmitters/TX1/DIAGNOSTICS.md) for flashing, capture, and
+interpretation. These counters are local to TX1 and are not added to protocol
+v1 or the Pi CSV. TX2 retains its existing firmware.
 
 ## What changed
 

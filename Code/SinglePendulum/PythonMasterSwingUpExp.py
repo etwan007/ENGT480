@@ -12,6 +12,8 @@ from datetime import datetime
 from pathlib import Path
  
 from run_csv_logger import RunCsvLogger
+from swingup_control import SwingUpController
+from angle_protocol import AnglePacketReader, AngleProtocolError, packet_csv_values
 from live_offset_keys import LiveOffsetKeys
 from angle_packet_fallback import (MissingAnglePacketError, collect_valid_samples,
                                    estimate_with_angle)
@@ -45,6 +47,9 @@ last_good_angle_read_at = None
 esp32_packet_count = 0
 last_motor_command = None
 offset_keys = LiveOffsetKeys()
+angle_reader = AnglePacketReader()
+latest_angle_packet = None
+latest_angle_message = ""
  
 def log(tag, message):
     # Keep fault diagnostics visible even when routine balancing logs are off.
@@ -60,7 +65,7 @@ def report_uncaught(exc_type, exc, tb):
     if run_logger is not None:
         run_logger.event("fault", f"stage={current_stage}; cycle={cycle_count}; "
                          f"raw_angles={latest_raw_angles}; cart_steps={latest_position_steps}; "
-                         f"motor_command={last_motor_command}; {run_stop_reason}",
+                         f"motor_command={last_motor_command}; angle_details={latest_angle_message}; {run_stop_reason}",
                          "" if run_started_at is None else time.monotonic() - run_started_at)
     log("FAULT", f"stage={current_stage}, cycle={cycle_count}: "
                  f"{exc_type.__name__}: {exc}")
@@ -83,45 +88,37 @@ def read_exact(port, count, timeout_seconds=0.1):
  
 def read_raw_angle1():
     global latest_raw_angle, latest_raw_angles, last_good_angle_read_at, esp32_packet_count
-    # ESP32 sends three unsigned 16-bit angles, high byte first.
+    global latest_angle_packet, latest_angle_message
+    latest_angle_packet = None
+    latest_angle_message = ""
     try:
-        packet = read_exact(esp32, 6)
-    except TimeoutError as exc:
-        log("SENSOR", f"ESP32_PACKET_TIMEOUT wall={datetime.now().astimezone().isoformat(timespec='milliseconds')} "
-                      f"stage={current_stage} cycle={cycle_count} "
-                      f"complete_packets_before_timeout={esp32_packet_count} "
-                      f"last_valid_raw={latest_raw_angle} last_cart_steps={latest_position_steps} "
-                      f"last_motor_cmd={last_motor_command}: {exc}")
+        packet = angle_reader.read_latest(esp32)
+    except AngleProtocolError as exc:
         latest_raw_angles = (None, None, None)
-        esp32.reset_input_buffer()  # discard a partial packet before the next cycle
+        latest_angle_message = str(exc)
+        log("SENSOR", f"ESP32_PACKET_TIMEOUT cycle={cycle_count}: {exc}")
         raise MissingAnglePacketError(str(exc)) from exc
-    received_at = time.monotonic()
+    latest_angle_packet = packet
     esp32_packet_count += 1
-    angles = struct.unpack('>HHH', packet)
-    latest_raw_angles = angles
-    esp32.reset_input_buffer()  # keep the newest ESP32 packet next time
-    if any(value != 0xFFFF and value >= ENCODER_COUNTS for value in angles):
-        log("SENSOR", f"ANGLE_PACKET_INVALID wall={datetime.now().astimezone().isoformat(timespec='milliseconds')} "
-                      f"stage={current_stage} cycle={cycle_count} "
-                      f"complete_packet={esp32_packet_count} bytes={packet.hex()} "
-                      f"raw_angles={angles}")
-        raise MissingAnglePacketError(f"Invalid ESP32 angle packet: {angles}")
-    if angles[0] == 0xFFFF:
+    latest_raw_angles = packet.angles
+    received_at = time.monotonic()
+    if packet.angles[0] == 0xFFFF:
+        latest_angle_message = packet.channel_message(0)
         age_ms = (None if last_good_angle_read_at is None else
                   (received_at - last_good_angle_read_at) * 1000)
         age_text = "none" if age_ms is None else f"{age_ms:.1f}"
         log("SENSOR", f"ANGLE1_MISSING wall={datetime.now().astimezone().isoformat(timespec='milliseconds')} "
                       f"stage={current_stage} cycle={cycle_count} "
-                      f"complete_packet={esp32_packet_count} bytes={packet.hex()} "
-                      f"raw_angles={angles} last_valid_raw={latest_raw_angle} "
+                      f"sequence={packet.sequence} {latest_angle_message} "
+                      f"raw_angles={packet.angles} last_valid_raw={latest_raw_angle} "
                       f"ms_since_last_valid_Pi_read={age_text} "
                       f"last_cart_steps={latest_position_steps} last_motor_cmd={last_motor_command}")
-        raise MissingAnglePacketError("First pendulum angle is missing (ESP32 sent 65535)")
-    latest_raw_angle = angles[0]
+        raise MissingAnglePacketError(latest_angle_message)
+    latest_raw_angle = packet.angles[0]
     last_good_angle_read_at = received_at
-    return angles[0]
- 
- 
+    return packet.angles[0]
+
+
 def calibrate_from_hanging(sample_count=50):
     """Use the hanging position to estimate the opposite, upright position."""
     log("CAL", f"Reading {sample_count} ESP32 angle packets with the motor off")
@@ -234,16 +231,21 @@ Ld, Pd, Edkalm = ctrl.dlqe(ssDisc.A, sp.diag(1,1,1,1), ssDisc.C, sp.diag(0.5,0.5
  
 # =====================================================================
 # SWING-UP PARAMETERS
-# Adjust k_energy, a_max_swing, theta_catch, and thetaDot_catch to tune.
+# Energy pumping commands acceleration, integrated to bounded motor velocity.
+# The brief pause at a reversal resets cart motion before the next energy push.
+# Tune hesitation_s first for pause length; keep acceleration/speed within limits.
 # =====================================================================
-Ival_eff       = Ival + m1val * lval**2   # effective pendulum rotational inertia
-E_ref          = m1val * gval * lval       # target energy = upright equilibrium (θ=0, θ̇=0)
- 
-k_energy       = 10.0    # energy injection gain — start here, tune between 5 and 20
-a_max_swing    = 2.0     # max cart acceleration during swing-up (m/s²)
-v_max_swing    = 0.45    # max cart speed during swing-up (m/s)
-k_center       = 1.5     # soft centering gain — prevents cart drifting to rail ends
- 
+Ival_eff       = Ival + m1val * lval**2
+E_ref          = m1val * gval * lval
+
+k_energy       = 15.0    # positive gain on (E_ref - E_pend), NOT the old velocity gain
+a_max_swing    = 2.0     # max commanded cart acceleration, including braking (m/s²)
+v_max_swing    = 0.40    # max cart speed during swing-up (m/s)
+k_center       = 0.5     # soft cart-centering acceleration gain
+hesitation_s   = 0.05    # hold near zero speed AFTER braking at each swing reversal
+reversal_speed = 0.4     # angular-speed hysteresis avoids repeated pauses from noise
+startup_kick_s = 0.15    # one bounded kick to leave the still-hanging equilibrium
+
 theta_catch    = 0.35    # radians (~20°) from upright: attempt LQG catch inside this
 thetaDot_catch = 5.0     # max |θ̇| (rad/s) allowed when switching to LQG
 theta_fallback = 1.0     # if LQG loses it past this angle (rad), return to swing-up
@@ -254,11 +256,17 @@ mode           = MODE_SWINGUP
  
 # Finite-difference θ̇ estimator state
 theta_prev     = None    # initialised after the first angle read below
+theta_prev_receiver_ms = None
 theta_dot_est  = 0.0
 alpha_td       = 0.6     # IIR coeff: 0 = raw derivative, 1 = completely frozen
  
-# Swing-up motor velocity integrator
+# Swing-up motor velocity and phase state.
 xDiv_swing     = 0.0
+swing_controller = SwingUpController(
+    inertia=Ival_eff, mgl=E_ref, energy_gain=k_energy,
+    max_acceleration=a_max_swing, max_speed=v_max_swing, center_gain=k_center,
+    hesitation_s=hesitation_s, reversal_speed=reversal_speed, kick_s=startup_kick_s)
+swing_above_horizontal = False
  
 # Initialised here so the logger can reference them before the first cycle
 E_pend         = 0.0
@@ -266,6 +274,25 @@ E_err          = 0.0
 # =====================================================================
  
  
+def update_theta_velocity(measured_theta, packet):
+    """Use receiver-frame elapsed time, including skipped or missing readings."""
+    global theta_prev, theta_prev_receiver_ms, theta_dot_est
+    if measured_theta is None:
+        return
+    receiver_ms = packet.receiver_ms
+    if theta_prev is not None and theta_prev_receiver_ms is not None:
+        elapsed_ms = (receiver_ms - theta_prev_receiver_ms) & 0xFFFFFFFF
+        if 0 < elapsed_ms < 0x80000000:
+            d_theta = (measured_theta - theta_prev + np.pi) % (2 * np.pi) - np.pi
+            theta_dot_raw = d_theta / (elapsed_ms / 1000.0)
+            theta_dot_est = alpha_td * theta_dot_est + (1 - alpha_td) * theta_dot_raw
+        else:
+            # Re-seed on receiver restart or a zero-time interval.
+            theta_dot_est = 0.0
+    theta_prev = measured_theta
+    theta_prev_receiver_ms = receiver_ms
+
+
 #-----CONTROL CODE-------#
 line = 0x00000000
 positionRaw = 0x0000
@@ -343,6 +370,7 @@ log("START", "Cleared old serial input bytes")
  
 log("READY", "Keep motor power OFF and pendulum 1 hanging still during calibration")
 current_stage = "calibrating hanging angle from ESP32"
+angle_reader.discard_pending(esp32)
 automatic_correction = calibrate_from_hanging()
 correction = ((automatic_correction +
                UPRIGHT_OFFSET_DEG * ENCODER_COUNTS / 360.0) % ENCODER_COUNTS)
@@ -355,7 +383,7 @@ if SAVE_RUN_CSV:
     new_logger.start()
     run_logger = new_logger
     run_logger.event("config", json.dumps({
-        "schema_version": 1, "sample_period_s": Ts,
+        "schema_version": 2, "angle_protocol_version": 1, "sample_period_s": Ts,
         "pendulum_length_m": length, "center_of_mass_m": lval,
         "pendulum_inertia_kg_m2": Ival, "pendulum_mass_kg": m1val,
         "cart_mass_kg": mcartVal, "cart_drag": B_cart_dragVal,
@@ -374,6 +402,10 @@ if SAVE_RUN_CSV:
         "swing_up_a_max": a_max_swing,
         "swing_up_v_max": v_max_swing,
         "swing_up_k_center": k_center,
+        "swing_up_control": "energy_acceleration_with_reversal_hesitation",
+        "swing_up_hesitation_s": hesitation_s,
+        "swing_up_reversal_speed_rad_s": reversal_speed,
+        "swing_up_startup_kick_s": startup_kick_s,
         "swing_up_theta_catch_rad": theta_catch,
         "swing_up_thetaDot_catch": thetaDot_catch,
         "swing_up_theta_fallback_rad": theta_fallback,
@@ -394,6 +426,7 @@ if run_logger is not None:
 # Read initial angle from hanging position (no upright check needed for swing-up).
 # Expect theta1 ≈ ±π if the pendulum is hanging straight down.
 current_stage = "reading initial hanging angle from ESP32"
+angle_reader.discard_pending(esp32)
 initial_samples, missed_packets = collect_valid_samples(
     lambda: (angleRead(correction), latest_raw_angle), 10, max_total_misses=3)
 initial_angles, initial_raw = zip(*initial_samples)
@@ -435,8 +468,9 @@ if run_logger is not None:
  
 Ylast = np.array([[theta1], [0], [x], [0]])
  
-# Initialise the finite-difference θ̇ estimator with the first angle reading.
-theta_prev = theta1
+# Pair the last measured angle with its receiver timestamp for the derivative.
+theta_prev = float(initial_angles[-1])
+theta_prev_receiver_ms = latest_angle_packet.receiver_ms
  
 loop = 0
 next_status_log = time.monotonic()
@@ -453,6 +487,7 @@ try:
         cycle_started = time.monotonic()
         cycle_period_ms = ("" if previous_cycle_started is None else
                            (cycle_started - previous_cycle_started) * 1000)
+        swing_dt = Ts if previous_cycle_started is None else cycle_period_ms / 1000.0
         previous_cycle_started = cycle_started
         if loop < 250:
             loop = loop + 1
@@ -464,6 +499,9 @@ try:
             correction = ((automatic_correction + UPRIGHT_OFFSET_DEG *
                            ENCODER_COUNTS / 360.0) % ENCODER_COUNTS)
             Ylast[0, 0] -= np.deg2rad(offset_delta_deg)
+            if theta_prev is not None:
+                theta_prev = ((theta_prev - np.deg2rad(offset_delta_deg) + np.pi)
+                              % (2 * np.pi) - np.pi)
             offset_message = (f"cycle={cycle_count}; manual_upright_offset_deg={UPRIGHT_OFFSET_DEG:+.6f}; "
                               f"delta_deg={offset_delta_deg:+.6f}; upright_correction_counts={correction:.6f}")
             if run_logger is not None:
@@ -482,26 +520,16 @@ try:
             measured_theta = None
         sensor_read_ms = (time.monotonic() - sensor_read_started) * 1000
  
-        # ---- ADDED: θ̇ estimation via finite differences + IIR filter ----
-        # Uses the raw measured angle (before Kalman correction) for best accuracy.
-        # Handles the ±π wrap when the pendulum passes through the bottom.
-        if measured_theta is not None and theta_prev is not None:
-            d_theta = measured_theta - theta_prev
-            if d_theta >  np.pi:  d_theta -= 2 * np.pi
-            if d_theta < -np.pi:  d_theta += 2 * np.pi
-            theta_dot_raw = d_theta / Ts
-            theta_dot_est = alpha_td * theta_dot_est + (1 - alpha_td) * theta_dot_raw
-        if measured_theta is not None:
-            theta_prev = measured_theta
-        # ---- END ADDED ----
- 
+        # Receiver timestamps account for skipped frames and missed readings.
+        update_theta_velocity(measured_theta, latest_angle_packet)
+
         current_stage = "updating controller state"
         cart_used_m = x
         YfinalEst, theta1, consecutive_angle_misses = estimate_with_angle(
             Yest, measured_theta, x, ssDisc.C, Ld, consecutive_angle_misses)
         angle_packet_message = ""
         if measured_theta is None:
-            angle_packet_message = "ESP32 angle missing; using predicted angle"
+            angle_packet_message = f"{latest_angle_message}; using predicted angle"
             log("SENSOR", f"{angle_packet_message} at cycle={cycle_count}")
             if run_logger is not None:
                 run_logger.event("sensor_fallback", angle_packet_message,
@@ -519,24 +547,32 @@ try:
         # ---- CHANGED: mode-switched control (swing-up or LQG) ----
         if mode == MODE_SWINGUP:
             current_stage = "swing-up energy control"
-            # Åström-Furuta energy pump: drive cart acceleration proportional to
-            # the energy error and the current swing state (θ̇·cos θ).
-            a_swing  = k_energy * E_err * theta_dot_est * np.cos(theta1)
-            # Soft centering keeps the cart from drifting to the rail ends.
-            a_swing += k_center * (-x)
-            a_swing  = np.clip(a_swing, -a_max_swing, a_max_swing)
- 
-            # Integrate to a target cart velocity (stepper is velocity-controlled).
-            xDiv_swing += a_swing * Ts
-            xDiv_swing  = np.clip(xDiv_swing, -v_max_swing, v_max_swing)
- 
-            # Store equivalent force in u so the Kalman prediction stays reasonable.
-            u = np.array([[a_swing * (m1val + mcartVal)]])
+
+
+            xDiv_swing = swing_controller.update(
+                theta1, theta_dot_est, x, swing_dt,
+                valid_measurement=measured_theta is not None)
+            swing_message = (f"mode=SWING_UP; phase={swing_controller.phase}; "
+                             f"energy_j={E_pend:.6f}; target_energy_j={E_ref:.6f}; "
+                             f"cart_velocity_command_m_s={xDiv_swing:.6f}")
+            angle_packet_message = "; ".join(
+                message for message in (angle_packet_message, swing_message) if message)
+            if (measured_theta is not None and not swing_above_horizontal
+                    and abs(theta1) < np.pi / 2):
+                swing_above_horizontal = True
+                log("RUN", f"*** ABOVE HORIZONTAL *** theta={np.rad2deg(theta1):.1f}deg")
+                if run_logger is not None:
+                    run_logger.event("swing_above_horizontal", swing_message,
+                                     time.monotonic() - run_started_at)
+
+            # No force measurement is available for the velocity-driven swing-up.
+            u = np.array([[0.0]])
             force_command_n = u.item()
             ramp_fraction   = 1.0  # no ramp during swing-up
  
             # Check catch condition: near upright and slow enough for LQG to hold.
-            if abs(theta1) < theta_catch and abs(theta_dot_est) < thetaDot_catch:
+            if (measured_theta is not None and abs(theta1) < theta_catch
+                    and abs(theta_dot_est) < thetaDot_catch):
                 mode       = MODE_LQG
                 loop       = 0        # restart LQG ramp
                 xDiv_swing = 0.0
@@ -565,9 +601,10 @@ try:
             # Fall back to swing-up if balance is lost.
             if abs(theta1) > theta_fallback:
                 mode       = MODE_SWINGUP
-                # Seed the velocity integrator from the current Kalman estimate
-                # so the cart doesn't jump discontinuously.
-                xDiv_swing = YfinalEst[3].item()
+                # Re-seed velocity and clear the prior pause without another startup kick.
+                swing_controller.reset(YfinalEst[3].item(), startup=False)
+                xDiv_swing = swing_controller.velocity
+                swing_above_horizontal = False
                 log("RUN", f"*** LOST BALANCE *** returning to swing-up: "
                             f"theta={np.rad2deg(theta1):.1f}deg")
                 if run_logger is not None:
@@ -615,7 +652,8 @@ try:
                 *Yest.flat, *YfinalEst.flat,
                 previous_force_n, force_command_n, ramp_fraction,
                 f, timer_command, sensor_read_ms, position_read_ms,
-                loop_ms, cycle_period_ms, angle_packet_message,
+                loop_ms, cycle_period_ms,
+                *packet_csv_values(latest_angle_packet, angle_reader), angle_packet_message,
             ))
         max_cycle_ms = max(max_cycle_ms, loop_ms)
         if SHOW_BALANCING_LOGS and now >= next_status_log:
@@ -630,6 +668,7 @@ try:
             log("RUN", f"[{mode_tag}] cycle={cycle_count} raw={latest_raw_angle} "
                        f"tilt={theta_degrees:+.2f}deg "
                        f"offset={UPRIGHT_OFFSET_DEG:+.3f}deg "
+                       f"phase={swing_controller.phase if mode == MODE_SWINGUP else 'balance'} "
                        f"thetaDot={theta_dot_est:+.2f}r/s "
                        f"E={E_pend:.4f}/{E_ref:.4f} "
                        f"steps={latest_position_steps} cart={x:+.4f}m "
