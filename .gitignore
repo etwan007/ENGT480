@@ -1,0 +1,5 @@
+# Generated Python files and recorded controller runs
+__pycache__/
+*.py[cod]
+Code/SinglePendulum/run_logs/
+Code/DoublePendulum/run_logs/

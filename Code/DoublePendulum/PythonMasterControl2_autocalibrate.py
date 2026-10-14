@@ -16,6 +16,8 @@ import numpy as np
 import serial
 
 from run_csv_logger import DOUBLE_COLUMNS, RunCsvLogger
+from angle_protocol import AnglePacketReader, AngleProtocolError, packet_csv_values
+from angle_packet_fallback import MissingAnglePacketError, collect_valid_samples
 
 
 ENCODER_COUNTS = 16384
@@ -29,6 +31,16 @@ MAX_START_ANGLE_DEG = 12
 MAX_RUNNING_ANGLE_RAD = 1.0
 STATUS_INTERVAL_S = 0.5
 DISTANCE_PER_6400_STEPS_M = 0.638175
+# Positive offsets subtract degrees from the corresponding reported angle.
+# Arm 1's offset also affects arm 2's absolute angle because theta2 = theta1 + joint2.
+ARM1_OFFSET_DEG = 0.0
+JOINT2_OFFSET_DEG = 0.0
+# Allowed misses: 1 allows one miss and stops on the second; 0 stops immediately.
+# Running misses share one counter across both required angle channels.
+MAX_RUNNING_CONSECUTIVE_MISSES = 1
+MAX_SETUP_CONSECUTIVE_MISSES = 1
+MAX_HANGING_TOTAL_MISSES = 5
+MAX_UPRIGHT_TOTAL_MISSES = 3
 # Set False to hide routine terminal output after the motor-on Enter prompt.
 SHOW_BALANCING_LOGS = True
 # CSV writes happen on a separate thread; the control loop never waits for disk.
@@ -39,6 +51,9 @@ started_at = time.monotonic()
 balancing_output_active = False
 esp32_packet_count = 0
 latest_raw_angles = None
+angle_reader = AnglePacketReader()
+latest_angle_packet = None
+latest_angle_message = ""
 
 
 def log(tag, message):
@@ -60,20 +75,33 @@ def read_exact(port, count, timeout_s=0.1):
 
 
 def read_angles(esp32):
-    """Read the receiver's three big-endian 16-bit channels; require links 1 and 2."""
-    global esp32_packet_count, latest_raw_angles
-    packet = read_exact(esp32, 6)
-    raw = struct.unpack(">HHH", packet)
+    """Read a validated v1 frame, preserving receiver reasons and wireless ages."""
+    global esp32_packet_count, latest_raw_angles, latest_angle_packet, latest_angle_message
+    latest_angle_packet = None
+    latest_angle_message = ""
+    try:
+        packet = angle_reader.read_latest(esp32)
+    except AngleProtocolError as exc:
+        latest_raw_angles = (None, None, None)
+        latest_angle_message = str(exc)
+        log("SENSOR", f"ESP32_PACKET_TIMEOUT: {exc}")
+        raise MissingAnglePacketError(str(exc)) from exc
+    latest_angle_packet = packet
+    latest_raw_angles = packet.angles
     esp32_packet_count += 1
-    latest_raw_angles = raw
-    esp32.reset_input_buffer()  # Discard stale complete packets before the next read.
-    if any(value != 0xFFFF and value >= ENCODER_COUNTS for value in raw):
-        raise ValueError(f"Invalid ESP32 angle packet {raw} ({packet.hex()})")
+    latest_angle_message = packet.missing_message((0, 1))
+    return packet.angles
+
+
+def read_required_angles(esp32):
+    """Require both angle channels during setup, before a prediction exists."""
+    raw = read_angles(esp32)
     missing = [str(index + 1) for index in (0, 1) if raw[index] == 0xFFFF]
     if missing:
-        raise RuntimeError(
+        log("SENSOR", f"ANGLE_MISSING channels={','.join(missing)} raw={raw}; {latest_angle_message}")
+        raise MissingAnglePacketError(
             f"Pendulum angle channel(s) {', '.join(missing)} missing "
-            f"(ESP32 packet {raw}, bytes {packet.hex()})"
+            f"(ESP32 packet {raw}); {latest_angle_message}"
         )
     return raw
 
@@ -91,11 +119,13 @@ def circular_mean_counts(readings):
 def calibrate_hanging(esp32):
     """Return arm 1 upright and arm 2 aligned references in encoder counts."""
     log("CAL", f"Reading {HANGING_SAMPLES} packets with both arms hanging")
-    readings = []
-    for index in range(HANGING_SAMPLES):
-        readings.append(read_angles(esp32)[:2])
-        if index < HANGING_SAMPLES - 1:
-            time.sleep(SAMPLE_SPACING_S)
+    readings, misses = collect_valid_samples(
+        lambda: read_required_angles(esp32)[:2], HANGING_SAMPLES,
+        interval_s=SAMPLE_SPACING_S,
+        max_total_misses=MAX_HANGING_TOTAL_MISSES,
+        max_consecutive_misses=MAX_SETUP_CONSECUTIVE_MISSES)
+    if misses:
+        log("CAL", f"Skipped {misses} unusable ESP32 packet(s)")
     readings = np.asarray(readings, dtype=float)
     down1 = circular_mean_counts(readings[:, 0])
     aligned2 = circular_mean_counts(readings[:, 1])
@@ -123,6 +153,14 @@ def calibrate_hanging(esp32):
     return upright1, aligned2
 
 
+def apply_manual_offsets(upright1, aligned2):
+    """Shift encoder references so positive offsets reduce model angles."""
+    # The double controller negates encoder direction, so subtract from references.
+    counts_per_degree = ENCODER_COUNTS / 360.0
+    return ((upright1 - ARM1_OFFSET_DEG * counts_per_degree) % ENCODER_COUNTS,
+            (aligned2 - JOINT2_OFFSET_DEG * counts_per_degree) % ENCODER_COUNTS)
+
+
 def model_angles(raw1, raw2, upright1, aligned2):
     """Return both absolute angles and the second joint angle, in radians.
 
@@ -135,17 +173,35 @@ def model_angles(raw1, raw2, upright1, aligned2):
     return theta1, theta1 + joint2, joint2
 
 
+def model_angles_with_prediction(raw, predicted, upright1, aligned2):
+    """Substitute predicted angles only for unavailable encoder channels."""
+    raw1, raw2, _ = raw
+    missing = []
+    scale = -(2 * np.pi / ENCODER_COUNTS)
+    if raw1 is None or raw1 == 0xFFFF:
+        theta1 = float(predicted[0, 0])
+        missing.append(1)
+    else:
+        theta1 = signed_count_delta(raw1, upright1) * scale
+    if raw2 is None or raw2 == 0xFFFF:
+        joint2 = float(predicted[2, 0] - predicted[0, 0])
+        missing.append(2)
+    else:
+        joint2 = signed_count_delta(raw2, aligned2) * scale
+    theta2 = theta1 + joint2
+    return theta1, theta2, joint2, missing
+
+
 def check_upright(esp32, upright1, aligned2):
-    samples = []
-    raw_first = None
-    raw_last = None
-    for index in range(UPRIGHT_SAMPLES):
-        raw = read_angles(esp32)
-        raw_first = raw if raw_first is None else raw_first
-        raw_last = raw
-        samples.append(model_angles(raw[0], raw[1], upright1, aligned2))
-        if index < UPRIGHT_SAMPLES - 1:
-            time.sleep(SAMPLE_SPACING_S)
+    raw_samples, misses = collect_valid_samples(
+        lambda: read_required_angles(esp32), UPRIGHT_SAMPLES,
+        interval_s=SAMPLE_SPACING_S, max_total_misses=MAX_UPRIGHT_TOTAL_MISSES,
+        max_consecutive_misses=MAX_SETUP_CONSECUTIVE_MISSES)
+    if misses:
+        log("CHECK", f"Skipped {misses} unusable ESP32 packet(s)")
+    raw_first, raw_last = raw_samples[0], raw_samples[-1]
+    samples = [model_angles(raw[0], raw[1], upright1, aligned2)
+               for raw in raw_samples]
     theta1, theta2, joint2 = np.median(np.asarray(samples), axis=0)
     log(
         "CHECK",
@@ -206,7 +262,15 @@ def timer_command_for_velocity(cart_velocity):
 
 
 def main():
-    global balancing_output_active
+    global balancing_output_active, angle_reader, latest_angle_packet, latest_angle_message
+    angle_reader = AnglePacketReader()
+    latest_angle_packet = None
+    latest_angle_message = ""
+    for name in ("MAX_RUNNING_CONSECUTIVE_MISSES", "MAX_SETUP_CONSECUTIVE_MISSES",
+                 "MAX_HANGING_TOTAL_MISSES", "MAX_UPRIGHT_TOTAL_MISSES"):
+        limit = globals()[name]
+        if isinstance(limit, bool) or not isinstance(limit, int) or limit < 0:
+            raise ValueError(f"{name} must be a nonnegative integer")
     matrices_path = Path(__file__).with_name("control_matrices2.txt")
     matrices = load_control_data(matrices_path)
     log("START", f"Loaded control matrices from {matrices_path}")
@@ -234,7 +298,12 @@ def main():
         stage = "hanging calibration"
         log("READY", "Motor power OFF; center the cart and let BOTH arms hang still")
         input("Press Enter when both arms have stopped swinging: ")
-        upright1, aligned2 = calibrate_hanging(esp32)
+        angle_reader.discard_pending(esp32)
+        automatic_upright1, automatic_aligned2 = calibrate_hanging(esp32)
+        upright1, aligned2 = apply_manual_offsets(automatic_upright1, automatic_aligned2)
+        log("CAL", f"manual offsets: arm1={ARM1_OFFSET_DEG:+.3f}deg, "
+                   f"joint2={JOINT2_OFFSET_DEG:+.3f}deg; "
+                   f"effective references: upright1={upright1:.1f}, aligned2={aligned2:.1f} counts")
 
         stage = "upright check"
         if SAVE_RUN_CSV:
@@ -243,10 +312,18 @@ def main():
             new_logger.start()
             run_logger = new_logger
             run_logger.event("config", json.dumps({
-                "schema_version": 1, "pendulum_count": 2,
+                "schema_version": 2, "angle_protocol_version": 1, "pendulum_count": 2,
                 "sample_period_s": SAMPLE_PERIOD_S,
                 "distance_per_6400_steps_m": DISTANCE_PER_6400_STEPS_M,
                 "max_running_angle_rad": MAX_RUNNING_ANGLE_RAD,
+                "automatic_upright_1_counts": float(automatic_upright1),
+                "automatic_aligned_2_counts": float(automatic_aligned2),
+                "manual_arm1_offset_deg": ARM1_OFFSET_DEG,
+                "manual_joint2_offset_deg": JOINT2_OFFSET_DEG,
+                "max_running_consecutive_misses": MAX_RUNNING_CONSECUTIVE_MISSES,
+                "max_setup_consecutive_misses": MAX_SETUP_CONSECUTIVE_MISSES,
+                "max_hanging_total_misses": MAX_HANGING_TOTAL_MISSES,
+                "max_upright_total_misses": MAX_UPRIGHT_TOTAL_MISSES,
                 "reference_upright_1_counts": float(upright1),
                 "reference_aligned_2_counts": float(aligned2),
                 "discrete_A": matrices["A"].tolist(),
@@ -262,6 +339,7 @@ def main():
         run_started_at = time.monotonic()
         if run_logger is not None:
             run_logger.event("start", "Double pendulum balancing requested", 0.0)
+        angle_reader.discard_pending(esp32)
         theta1, theta2 = check_upright(esp32, upright1, aligned2)
         if run_logger is not None:
             run_logger.event("check", f"arm1_deg={np.degrees(theta1):+.3f}; "
@@ -286,6 +364,7 @@ def main():
         last_status_at = next_status
         last_status_cycle = 0
         previous_cycle_started = None
+        consecutive_angle_misses = 0
         log("RUN", "Double pendulum control loop started")
 
         while True:
@@ -297,17 +376,39 @@ def main():
             previous_cycle_started = cycle_started
             previous_force_n = float(force[0, 0])
             predicted = matrices["A"] @ state + matrices["B"] @ force
+            stage = "reading ESP32 angles"
             sensor_read_started = time.monotonic()
-            raw1, raw2, raw3 = read_angles(esp32)
+            try:
+                raw1, raw2, raw3 = read_angles(esp32)
+            except MissingAnglePacketError:
+                raw1, raw2, raw3 = None, None, None
             sensor_read_ms = (time.monotonic() - sensor_read_started) * 1000
             reference_used = upright1
-            theta1, theta2, joint2 = model_angles(raw1, raw2, reference_used, aligned2)
+            theta1, theta2, joint2, missing_channels = model_angles_with_prediction(
+                (raw1, raw2, raw3), predicted, reference_used, aligned2)
+            angle_packet_message = ""
+            if missing_channels:
+                consecutive_angle_misses += 1
+                angle_packet_message = (
+                    f"ESP32 angle channel(s) {missing_channels} unavailable; {latest_angle_message}; "
+                    f"using predicted angle, consecutive={consecutive_angle_misses}")
+                log("SENSOR", f"{angle_packet_message} at cycle={cycle}")
+                if run_logger is not None:
+                    run_logger.event("sensor_fallback", angle_packet_message,
+                                     time.monotonic() - run_started_at)
+                if consecutive_angle_misses > MAX_RUNNING_CONSECUTIVE_MISSES:
+                    raise RuntimeError(
+                        f"{consecutive_angle_misses} consecutive ESP32 angle packets were unusable "
+                        f"(allowed {MAX_RUNNING_CONSECUTIVE_MISSES}); stopping motor")
+            else:
+                consecutive_angle_misses = 0
             if abs(theta1) > MAX_RUNNING_ANGLE_RAD or abs(theta2) > MAX_RUNNING_ANGLE_RAD:
                 raise RuntimeError(
                     f"Angle limit exceeded: arm1={np.degrees(theta1):+.1f}deg, "
                     f"arm2={np.degrees(theta2):+.1f}deg"
                 )
 
+            stage = "updating controller state"
             cart_used_m = cart_m
             measured = np.array([[theta1], [theta2], [cart_m]])
             state = predicted + matrices["Ld"] @ (measured - matrices["C"] @ predicted)
@@ -351,7 +452,8 @@ def main():
                     previous_force_n, force_command_n,
                     cart_velocity, ramp_fraction, step_hz, timer_command,
                     upright1, sensor_read_ms, position_read_ms,
-                    loop_ms, cycle_period_ms, "",
+                    loop_ms, cycle_period_ms,
+                    *packet_csv_values(latest_angle_packet, angle_reader), angle_packet_message,
                 ))
             if SHOW_BALANCING_LOGS and now >= next_status:
                 rate = (cycle - last_status_cycle) / max(now - last_status_at, 1e-6)
@@ -377,7 +479,7 @@ def main():
         if run_logger is not None:
             run_logger.event("fault", f"stage={stage}; cycle={cycle}; "
                              f"raw_angles={latest_raw_angles}; cart_steps={steps}; "
-                             f"motor_command={last_command}; {run_stop_reason}",
+                             f"motor_command={last_command}; angle_details={latest_angle_message}; {run_stop_reason}",
                              "" if run_started_at is None else time.monotonic() - run_started_at)
         log("FAULT", f"stage={stage}, cycle={cycle}: {type(exc).__name__}: {exc}")
         traceback.print_exc()

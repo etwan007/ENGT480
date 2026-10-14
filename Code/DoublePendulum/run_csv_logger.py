@@ -6,6 +6,8 @@ import sys
 import threading
 import time
 
+from angle_protocol import TELEMETRY_COLUMNS
+
 
 COLUMNS = (
     "record_type", "elapsed_s", "cycle", "esp32_packet", "raw_angle_1",
@@ -16,7 +18,7 @@ COLUMNS = (
     "est_angle_rate_rad_s", "est_cart_m", "est_cart_velocity_m_s",
     "previous_force_n", "force_command_n", "ramp_fraction",
     "step_frequency_hz", "motor_timer_command", "sensor_read_ms",
-    "position_read_ms", "loop_ms", "cycle_period_ms", "message",
+    "position_read_ms", "loop_ms", "cycle_period_ms", *TELEMETRY_COLUMNS, "message",
 )
 
 DOUBLE_COLUMNS = (
@@ -38,7 +40,7 @@ DOUBLE_COLUMNS = (
     "step_frequency_hz", "motor_timer_command",
     "reference_upright_1_next_counts",
     "sensor_read_ms", "position_read_ms", "loop_ms",
-    "cycle_period_ms", "message",
+    "cycle_period_ms", *TELEMETRY_COLUMNS, "message",
 )
 
 
