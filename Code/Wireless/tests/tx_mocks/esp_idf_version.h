@@ -1,0 +1,9 @@
+#pragma once
+#define ESP_IDF_VERSION_VAL(a,b,c) (((a) << 16) | ((b) << 8) | (c))
+#define ESP_IDF_VERSION_MAJOR 5
+#ifndef MOCK_IDF_MINOR
+#define MOCK_IDF_MINOR 3
+#endif
+#define ESP_IDF_VERSION_MINOR MOCK_IDF_MINOR
+#define ESP_IDF_VERSION_PATCH 2
+#define ESP_IDF_VERSION ESP_IDF_VERSION_VAL(5,MOCK_IDF_MINOR,2)
