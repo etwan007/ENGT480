@@ -80,3 +80,28 @@ FROM LAST YEAR <
 
 If you have a question about the system that we forgot to address:
  - Ethan Fuller: etwan007@gmail.com
+
+
+## Current calibrated controllers and run review
+
+- Single pendulum: `Code/SinglePendulum/PythonMaster_autocalibrate.py`.
+- Double pendulum: `Code/DoublePendulum/PythonMasterControl2_autocalibrate.py`; its existing `control_matrices2.txt` supplies the model and gains.
+- Both controllers have `SHOW_BALANCING_LOGS` and `SAVE_RUN_CSV` switches near the top. Set either to `False` to disable routine balancing output or CSV recording. Sensor errors and faults remain visible.
+- The single controller supports live arrow-key offset adjustments; both controllers handle one unusable angle cycle with an estimator prediction and stop on repeated misses by default.
+- Keep each controller with its neighboring helper files when copying it to the Pi.
+- Open `Code/RunReview/balancing_visualizer.html` locally to replay a single- or double-pendulum CSV. Its example CSVs contain synthetic data.
+- See [logging, offsets, and replay instructions](Code/RunReview/RUN_LOGGING_AND_VISUALIZER.md).
+
+Hardware-free checks (Python with NumPy installed; Node.js for the visualizer):
+
+```sh
+(cd Code/SinglePendulum && python3 -m unittest discover -p 'test_*.py')
+(cd Code/DoublePendulum && python3 -m unittest discover -p 'test_*.py')
+(cd Code/RunReview && node test_balancing_visualizer.js)
+```
+
+The current calibrated controllers require **receiver serial protocol v1**.
+Update the ESP32 receiver and Python readers together; TX1/TX2 keep their
+existing radio format. See [receiver deployment and diagnostics](Code/Wireless/ANGLE_PROTOCOL.md).
+Older controllers and `CommunicationTest.py` still use the legacy serial format
+and must not be run with the updated receiver. The Arduino motor protocol is unchanged.

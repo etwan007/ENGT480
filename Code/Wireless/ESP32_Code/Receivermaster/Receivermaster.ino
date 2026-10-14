@@ -1,122 +1,70 @@
 #include <WiFi.h>
 #include <esp_now.h>
 #include <esp_wifi.h>
+#include "angle_protocol.h"
 
-// ================= USER SETTINGS =================
-#define ESPNOW_CHANNEL        6
-#define NUM_SENDERS           3
+#define ESPNOW_CHANNEL 6
+#define NUM_SENDERS 3
+#define SERIAL_BAUD 921600
+#define CTRL_HZ 100
+#define CTRL_PERIOD_MS (1000UL / CTRL_HZ)
 
-// USB serial to Pi
-#define SERIAL_BAUD           921600
-
-// Control loop rate (handshake rate)
-#define CTRL_HZ               100
-#define CTRL_PERIOD_MS        (1000UL / CTRL_HZ)
-
-// Consider a sender "present" if we heard within this many ms
-#define PRESENT_TIMEOUT_MS    50
-
-// --------- MOTOR PINS (CHANGE THESE) ----------
-#define STEP_PIN              18   // step output (LEDC)
-#define DIR_PIN               19   // direction output
-#define EN_PIN                32   // enable output (ACTIVE LOW like your Arduino)
-
-// Limit switches (ACTIVE LOW)
-#define LIM1_PIN              22
-#define LIM2_PIN              23
-
-// // --------- STEP PULSE GENERATION ----------
-// #define LEDC_CH               0
-// #define LEDC_TIMER            0
-// #define LEDC_RES_BITS         8    // duty granularity; fine for 50%
-
-// Arduino-equivalent timebase:
-// Your old code used 16MHz/64 = 250kHz tick and toggle, so f = 125000/top.
-// Keep that same conversion so your Python output "top" still works.
-#define TIMER_TICK_HZ         250000.0f
-// =================================================
-
-// -------- ESPNOW packet from XIAO --------
+// The radio format stays compatible with TX1/TX2. Only USB serial uses v1.
 typedef struct __attribute__((packed)) {
-  uint8_t  sender_id;   // 0..2
-  uint16_t angle14;     // 0..16383 or 0xFFFF
+  uint8_t sender_id;
+  uint16_t angle14;
 } AnglePacket;
 
-// Latest angles (from ESPNOW)
-volatile uint16_t g_angle[3] = {0xFFFF, 0xFFFF, 0xFFFF};
-volatile uint32_t g_rxMs [3] = {0,0,0};
+static AngleProtocol::Sample g_samples[NUM_SENDERS] = {};
+static portMUX_TYPE sampleMux = portMUX_INITIALIZER_UNLOCKED;
+static uint32_t lastTick = 0;
+static uint32_t sequence = 0;
 
-uint16_t enc[3] = {0xFFFF, 0xFFFF, 0xFFFF};
-uint32_t rx[3] = {0, 0, 0};
-
-
-
-static inline void setChannel(uint8_t ch) {
-  esp_wifi_set_channel(ch, WIFI_SECOND_CHAN_NONE);
-}
-
-// ESPNOW recv callback
-void IRAM_ATTR onRecv(const esp_now_recv_info* info, const uint8_t* data, int len) {
+// This callback runs in the Wi-Fi task, not an interrupt handler.
+void onRecv(const esp_now_recv_info* info, const uint8_t* data, int len) {
   (void)info;
   if (len != (int)sizeof(AnglePacket)) return;
+  AnglePacket packet;
+  memcpy(&packet, data, sizeof(packet));
+  if (packet.sender_id >= NUM_SENDERS) return;
+  if (packet.angle14 >= 16384 && packet.angle14 != 0xFFFF) return;
 
-  AnglePacket p;
-  memcpy(&p, data, sizeof(p));
-  if (p.sender_id >= NUM_SENDERS) return;
-
-  g_angle[p.sender_id] = p.angle14;
-  g_rxMs[p.sender_id]  = (uint32_t)millis();
-  // Serial.println(g_angle[0]);
-}
-
-// ===== Serial helpers =====
-// Send int16 big-endian like your Python struct.unpack('>hh')
-static inline void writeI16BE(int16_t v) {
-  Serial.write((uint8_t)((v >> 8) & 0xFF));
-  Serial.write((uint8_t)(v & 0xFF));
+  portENTER_CRITICAL(&sampleMux);
+  g_samples[packet.sender_id].angle = packet.angle14;
+  g_samples[packet.sender_id].receivedMs = (uint32_t)millis();
+  g_samples[packet.sender_id].seen = true;
+  portEXIT_CRITICAL(&sampleMux);
 }
 
 void setup() {
   Serial.begin(SERIAL_BAUD);
   delay(200);
-
-  // ESPNOW init
   WiFi.mode(WIFI_STA);
-  setChannel(ESPNOW_CHANNEL);
+  esp_wifi_set_channel(ESPNOW_CHANNEL, WIFI_SECOND_CHAN_NONE);
   esp_wifi_set_ps(WIFI_PS_NONE);
-
   if (esp_now_init() != ESP_OK) {
     while (true) delay(1000);
   }
   esp_now_register_recv_cb(onRecv);
+  lastTick = (uint32_t)millis();
 }
 
 void loop() {
-  static uint32_t lastTick = 0;
-  uint32_t now = millis();
+  uint32_t scheduledAt = (uint32_t)millis();
+  if ((uint32_t)(scheduledAt - lastTick) < CTRL_PERIOD_MS) return;
+  // Skip missed slots after a stall instead of emitting a burst of old slots.
+  lastTick = scheduledAt;
 
-  // Run control handshake at fixed rate
-  if ((uint32_t)(now - lastTick) >= CTRL_PERIOD_MS) {
-    lastTick += CTRL_PERIOD_MS;
+  AngleProtocol::Sample snapshot[NUM_SENDERS];
+  portENTER_CRITICAL(&sampleMux);
+  memcpy(snapshot, g_samples, sizeof(snapshot));
+  portEXIT_CRITICAL(&sampleMux);
+  // Read the clock AFTER the snapshot, so a copied arrival cannot be in the future.
+  const uint32_t now = (uint32_t)millis();
 
-    // Snapshot angles; if stale, send 0xFFFF
-    for (int i = 0; i < NUM_SENDERS; i++) {
-      enc[i] = g_angle[i];
-      rx[i]  = g_rxMs[i];
-    }
-
-    for (int i = 0; i < NUM_SENDERS; i++) {
-      if (rx[i] == 0) {
-        enc[i] = 0xFFFF;
-      } else {
-        uint32_t age = now - rx[i];
-        if (age > PRESENT_TIMEOUT_MS) enc[i] = 0xFFFF;
-      }
-    }
-
-    // ---- SEND 6 BYTES TO PI (big-endian int16): enc0, enc1, enc2
-    writeI16BE((int16_t)enc[0]);
-    writeI16BE((int16_t)enc[1]);
-    writeI16BE((int16_t)enc[2]);
-  }
+  uint8_t frame[AngleProtocol::FRAME_SIZE];
+  AngleProtocol::encode(frame, sequence++, now, snapshot);
+  // A single write reduces fragmentation. Header + CRC allow reader recovery
+  // even if the serial transport still splits, truncates, or loses bytes.
+  Serial.write(frame, sizeof(frame));
 }

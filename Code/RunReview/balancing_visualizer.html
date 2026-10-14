@@ -1,0 +1,387 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Balancing Run Visualizer</title>
+<style>
+  :root { color-scheme: dark; font: 15px/1.45 system-ui, sans-serif; background:#101722; color:#eaf0f7; }
+  * { box-sizing:border-box; }
+  body { max-width:1480px; margin:0 auto; padding:28px; }
+  h1,h2,h3,p { margin-top:0; }
+  h1 { font-size:2rem; letter-spacing:-.04em; margin-bottom:5px; }
+  h2 { font-size:1.1rem; margin-bottom:12px; }
+  p,small,.muted { color:#9dacbd; }
+  .top { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:18px; margin-bottom:22px; }
+  .import { display:flex; align-items:center; gap:12px; }
+  button,select,.file-button { background:#1c2a39; color:#eaf0f7; border:1px solid #42566c; border-radius:9px; padding:9px 13px; font:inherit; cursor:pointer; }
+  button:hover,select:hover,.file-button:hover { border-color:#5cc7f5; }
+  button:disabled { opacity:.45; cursor:not-allowed; }
+  .file-button { background:#155879; border-color:#278fbc; font-weight:650; }
+  input[type=file] { position:absolute; width:1px; height:1px; opacity:0; }
+  input[type=range] { width:100%; accent-color:#5cc7f5; }
+  .card { background:#172231; border:1px solid #304154; border-radius:16px; padding:20px; }
+  .stats { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:12px; margin-bottom:16px; }
+  .stat { background:#172231; border:1px solid #304154; border-radius:12px; padding:14px 16px; }
+  .stat b { display:block; font-size:1.45rem; font-variant-numeric:tabular-nums; }
+  .stat span { color:#9dacbd; font-size:.83rem; }
+  .main { display:grid; grid-template-columns:minmax(330px,1fr) minmax(450px,1.35fr); gap:16px; }
+  #movement { display:block; width:100%; height:330px; border-radius:10px; background:#101b29; }
+  .readouts { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; margin-top:15px; }
+  .readout { padding:9px 11px; background:#101b29; border-radius:8px; }
+  .readout span { display:block; color:#9dacbd; font-size:.8rem; }
+  .readout strong { font-variant-numeric:tabular-nums; }
+  .transport { display:flex; align-items:center; gap:12px; margin-bottom:7px; }
+  .transport output { min-width:110px; font-variant-numeric:tabular-nums; text-align:right; }
+  .plot-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:16px; }
+  .plot-card { min-width:0; background:#101b29; border-radius:10px; padding:11px; }
+  .plot-title { display:flex; justify-content:space-between; align-items:center; min-height:30px; font-size:.86rem; color:#d2deec; gap:8px; }
+  .plot-title select { max-width:100%; padding:4px 6px; font-size:.8rem; }
+  .plot-wrap { position:relative; height:115px; }
+  .plot-wrap canvas { width:100%; height:100%; display:block; }
+  .cursor { position:absolute; top:8px; bottom:20px; width:1px; background:#f4b55f; pointer-events:none; }
+  .details { display:grid; grid-template-columns:1.5fr 1fr; gap:16px; margin-top:16px; }
+  .values { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); column-gap:18px; }
+  .value { display:flex; justify-content:space-between; gap:10px; border-bottom:1px solid #2b3b4b; padding:7px 0; font-size:.82rem; }
+  .value span { color:#9dacbd; overflow-wrap:anywhere; }
+  .value strong { text-align:right; font-variant-numeric:tabular-nums; }
+  .event { padding:9px 0; border-bottom:1px solid #2b3b4b; font-size:.85rem; overflow-wrap:anywhere; }
+  .event b { color:#f4b55f; text-transform:uppercase; margin-right:8px; }
+  #dropZone.dragging { outline:2px dashed #5cc7f5; outline-offset:5px; }
+  #notice { min-height:1.5em; color:#f4b55f; }
+  @media(max-width:1000px) { .main,.details { grid-template-columns:1fr; } .stats { grid-template-columns:repeat(3,1fr); } }
+  @media(max-width:600px) { body { padding:16px; } .stats,.plot-grid { grid-template-columns:repeat(2,1fr); } .values { grid-template-columns:1fr; } }
+</style>
+</head>
+<body id="dropZone">
+<header class="top">
+  <div><h1>Balancing Run Visualizer</h1><p>Replay a single or double pendulum run, then inspect every recorded control signal.</p></div>
+  <div class="import"><label class="file-button" for="csvFile">Open run CSV</label><input id="csvFile" type="file" accept=".csv,text/csv"><small id="filename">Drop a CSV anywhere on this page</small></div>
+</header>
+<div id="notice" role="status"></div>
+<section class="stats" aria-label="Run summary">
+  <div class="stat"><b id="sampleCount">—</b><span>Samples</span></div>
+  <div class="stat"><b id="duration">—</b><span>Duration</span></div>
+  <div class="stat"><b id="sampleRate">—</b><span>Average sample rate</span></div>
+  <div class="stat"><b id="peakTilt">—</b><span>Peak absolute tilt</span></div>
+  <div class="stat"><b id="dropped">—</b><span>Dropped samples</span></div>
+</section>
+<main class="main">
+  <section class="card">
+    <h2>Movement</h2>
+    <canvas id="movement" aria-label="Cart and pendulum movement"></canvas>
+    <div class="readouts">
+      <div class="readout"><span id="angle1Label">Measured angle</span><strong id="angleValue">—</strong></div>
+      <div class="readout" id="angle2Readout" hidden><span>Arm 2 angle</span><strong id="angle2Value">—</strong></div>
+      <div class="readout"><span>Cart position</span><strong id="cartValue">—</strong></div>
+      <div class="readout"><span>Estimated cart speed</span><strong id="speedValue">—</strong></div>
+      <div class="readout"><span>Motor command</span><strong id="motorValue">—</strong></div>
+    </div>
+  </section>
+  <section class="card">
+    <h2>Timeline</h2>
+    <div class="transport"><button id="play" disabled>Play</button><button id="back" disabled>◀ Step</button><button id="forward" disabled>Step ▶</button><label for="speed">Speed</label><select id="speed"><option value="0.25">0.25×</option><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="2">2×</option><option value="4">4×</option></select><output id="timeValue">—</output></div>
+    <input id="seek" type="range" min="0" max="1000" value="0" disabled aria-label="Seek through run">
+    <div class="plot-grid">
+      <div class="plot-card"><div class="plot-title" id="anglePlotTitle">Measured tilt (deg)</div><div class="plot-wrap"><canvas id="tiltPlot"></canvas><div class="cursor"></div></div></div>
+      <div class="plot-card"><div class="plot-title">Cart position (m)</div><div class="plot-wrap"><canvas id="cartPlot"></canvas><div class="cursor"></div></div></div>
+      <div class="plot-card"><div class="plot-title">Motor command</div><div class="plot-wrap"><canvas id="motorPlot"></canvas><div class="cursor"></div></div></div>
+      <div class="plot-card"><div class="plot-title"><span>Explore another signal</span><select id="metric"></select></div><div class="plot-wrap"><canvas id="extraPlot"></canvas><div class="cursor"></div></div></div>
+    </div>
+  </section>
+</main>
+<section class="details">
+  <div class="card"><h2>All values at selected sample</h2><div id="allValues" class="values"><p>Open a run CSV to inspect its data.</p></div></div>
+  <div class="card"><h2>Run events</h2><div id="events" class="muted">Start, stop, and fault events appear here.</div></div>
+</section>
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const plotSpecs = [
+    ['tiltPlot', 'measured_angle_deg', '#67d7f8'],
+    ['cartPlot', 'cart_m', '#7ce1ae'],
+    ['motorPlot', 'motor_timer_command', '#f6b86c'],
+    ['extraPlot', 'loop_ms', '#b7a2fb']
+  ];
+  let header = [], columns = {}, samples = [], times = [], events = [], isDouble = false;
+  let selected = 0, playing = false, playTime = 0, lastFrame = 0, minCart = 0, maxCart = 0;
+  const numeric = (row, name) => Number(row[columns[name]]);
+  const fmt = (value, digits = 2) => Number.isFinite(value) ? value.toFixed(digits) : '—';
+
+  function parseCsv(text) {
+    const rows = [];
+    let row = [], field = '', quoted = false;
+    for (let i = 0; i < text.length; i++) {
+      const ch = text[i];
+      if (quoted) {
+        if (ch === '"' && text[i + 1] === '"') { field += '"'; i++; }
+        else if (ch === '"') quoted = false;
+        else field += ch;
+      } else if (ch === '"') quoted = true;
+      else if (ch === ',') { row.push(field); field = ''; }
+      else if (ch === '\n' || ch === '\r') {
+        if (ch === '\r' && text[i + 1] === '\n') i++;
+        row.push(field); field = '';
+        if (row.some(value => value !== '')) rows.push(row);
+        row = [];
+      } else field += ch;
+    }
+    if (quoted) throw new Error('The CSV ends inside a quoted field.');
+    if (field || row.length) { row.push(field); rows.push(row); }
+    return rows;
+  }
+
+  async function loadFile(file) {
+    if (!file) return;
+    pause();
+    $('notice').textContent = 'Loading…';
+    try {
+      const rows = parseCsv(await file.text());
+      if (rows.length < 2) throw new Error('The CSV has no data rows.');
+      header = rows.shift();
+      columns = Object.fromEntries(header.map((name, index) => [name, index]));
+      for (const required of ['record_type', 'elapsed_s', 'cart_m']) {
+        if (!(required in columns)) throw new Error(`Missing required column: ${required}`);
+      }
+      isDouble = 'measured_angle_1_rad' in columns && 'measured_angle_2_rad' in columns;
+      if (!isDouble && !('measured_angle_rad' in columns)) {
+        throw new Error('The CSV has no single or double pendulum angle columns.');
+      }
+      $('angle1Label').textContent = isDouble ? 'Arm 1 angle' : 'Measured angle';
+      $('angle2Readout').hidden = !isDouble;
+      $('anglePlotTitle').textContent = isDouble ? 'Arm 1 (blue) and arm 2 (orange) tilt (deg)' : 'Measured tilt (deg)';
+      plotSpecs[0][1] = isDouble ? 'measured_angle_1_deg' : 'measured_angle_deg';
+      samples = rows.filter(row => row[columns.record_type] === 'sample');
+      events = rows.filter(row => row[columns.record_type] !== 'sample');
+      if (!samples.length) throw new Error('The CSV has no control-cycle samples.');
+      times = samples.map((row, index) => {
+        const value = numeric(row, 'elapsed_s');
+        return Number.isFinite(value) ? value : index / 100;
+      });
+      minCart = Infinity; maxCart = -Infinity;
+      for (const row of samples) {
+        const value = numeric(row, 'cart_m');
+        if (Number.isFinite(value)) { minCart = Math.min(minCart, value); maxCart = Math.max(maxCart, value); }
+      }
+      if (!Number.isFinite(minCart)) minCart = maxCart = 0;
+      $('filename').textContent = file.name;
+      $('sampleCount').textContent = samples.length.toLocaleString();
+      const span = times.at(-1) - times[0];
+      $('duration').textContent = `${fmt(span, 2)} s`;
+      $('sampleRate').textContent = span > 0 ? `${fmt((samples.length - 1) / span, 1)} Hz` : '—';
+      let peak = 0;
+      for (const row of samples) {
+        peak = Math.max(peak, Math.abs(numeric(row, plotSpecs[0][1]) || 0));
+        if (isDouble) peak = Math.max(peak, Math.abs(numeric(row, 'measured_angle_2_deg') || 0));
+      }
+      $('peakTilt').textContent = `${fmt(peak, 1)}°`;
+      const stop = [...events].reverse().find(row => row[columns.record_type] === 'stop');
+      const match = stop?.[columns.message]?.match(/dropped_samples=(\d+)/);
+      $('dropped').textContent = match ? Number(match[1]).toLocaleString() : 'unknown';
+      populateMetric();
+      showEvents();
+      for (const id of ['play', 'back', 'forward', 'seek']) $(id).disabled = false;
+      selectSample(0);
+      drawPlots();
+      $('notice').textContent = match && Number(match[1]) > 0 ? 'The writer queue filled; gaps may appear in this run.' : '';
+    } catch (error) {
+      $('notice').textContent = error.message;
+    }
+  }
+
+  function populateMetric() {
+    const select = $('metric');
+    select.replaceChildren();
+    for (const name of header) {
+      if (name === 'record_type' || name === 'message') continue;
+      const option = document.createElement('option');
+      option.value = name;
+      option.textContent = name;
+      select.append(option);
+    }
+    select.value = 'loop_ms';
+  }
+
+  function showEvents() {
+    const box = $('events');
+    box.replaceChildren();
+    for (const row of events) {
+      const item = document.createElement('div');
+      item.className = 'event';
+      const kind = document.createElement('b');
+      kind.textContent = row[columns.record_type];
+      item.append(kind, document.createTextNode(`${row[columns.elapsed_s] || ''} s  ${row[columns.message] || ''}`));
+      box.append(item);
+    }
+    if (!events.length) box.textContent = 'No events recorded.';
+  }
+
+  function selectSample(index, syncClock = true) {
+    if (!samples.length) return;
+    selected = Math.max(0, Math.min(samples.length - 1, index));
+    const row = samples[selected];
+    if (syncClock) playTime = times[selected];
+    $('seek').value = samples.length === 1 ? 0 : Math.round(selected / (samples.length - 1) * 1000);
+    $('timeValue').textContent = `${fmt(times[selected] - times[0], 2)} s`;
+    $('angleValue').textContent = `${fmt(numeric(row, plotSpecs[0][1]))}°`;
+    if (isDouble) $('angle2Value').textContent = `${fmt(numeric(row, 'measured_angle_2_deg'))}°`;
+    $('cartValue').textContent = `${fmt(numeric(row, 'cart_m'), 4)} m`;
+    $('speedValue').textContent = `${fmt(numeric(row, 'est_cart_velocity_m_s'), 3)} m/s`;
+    $('motorValue').textContent = row[columns.motor_timer_command] || '—';
+    const box = $('allValues');
+    box.replaceChildren();
+    header.forEach((name, i) => {
+      if (name === 'record_type' || name === 'message') return;
+      const item = document.createElement('div'); item.className = 'value';
+      const label = document.createElement('span'); label.textContent = name;
+      const value = document.createElement('strong'); value.textContent = row[i] || '—';
+      item.append(label, value); box.append(item);
+    });
+    drawMovement();
+    const ratio = samples.length === 1 ? 0 : (times[selected] - times[0]) / (times.at(-1) - times[0] || 1);
+    document.querySelectorAll('.cursor').forEach(cursor => { cursor.style.left = `${32 + ratio * (cursor.parentElement.clientWidth - 42)}px`; });
+  }
+
+  function setupCanvas(canvas) {
+    const rect = canvas.getBoundingClientRect(), scale = devicePixelRatio || 1;
+    canvas.width = Math.max(1, Math.round(rect.width * scale));
+    canvas.height = Math.max(1, Math.round(rect.height * scale));
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(scale, 0, 0, scale, 0, 0);
+    return [ctx, rect.width, rect.height];
+  }
+
+  function drawMovement() {
+    if (!samples.length) return;
+    const [ctx, w, h] = setupCanvas($('movement'));
+    const row = samples[selected];
+    const cart = numeric(row, 'cart_m');
+    const angle = numeric(row, isDouble ? 'measured_angle_1_rad' : 'measured_angle_rad');
+    const trackY = h * .73, margin = 55, usable = Math.max(1, w - 2 * margin);
+    const range = Math.max(maxCart - minCart, .25);
+    const center = (minCart + maxCart) / 2;
+    const cartX = margin + Math.max(0, Math.min(1, .5 + (cart - center) / range)) * usable;
+    ctx.clearRect(0, 0, w, h);
+    ctx.strokeStyle = '#526578'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(20, trackY + 22); ctx.lineTo(w - 20, trackY + 22); ctx.stroke();
+    ctx.strokeStyle = '#294558'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(w / 2, 20); ctx.lineTo(w / 2, trackY + 20); ctx.stroke();
+    ctx.fillStyle = '#42bde9'; ctx.fillRect(cartX - 37, trackY - 20, 74, 40);
+    ctx.fillStyle = '#d8eff8';
+    for (const dx of [-24, 24]) { ctx.beginPath(); ctx.arc(cartX + dx, trackY + 23, 8, 0, Math.PI * 2); ctx.fill(); }
+    const rodLength = isDouble ? Math.min(105, h * .30) : Math.min(150, h * .48);
+    const tipX = cartX + Math.sin(angle) * rodLength;
+    const tipY = trackY - 20 - Math.cos(angle) * rodLength;
+    ctx.strokeStyle = isDouble ? '#67d7f8' : '#f4b55f'; ctx.lineWidth = 7; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(cartX, trackY - 20); ctx.lineTo(tipX, tipY); ctx.stroke();
+    ctx.fillStyle = isDouble ? '#a8ebff' : '#ffd189';
+    ctx.beginPath(); ctx.arc(tipX, tipY, isDouble ? 9 : 13, 0, Math.PI * 2); ctx.fill();
+    if (isDouble) {
+      const angle2 = numeric(row, 'measured_angle_2_rad');
+      const tip2X = tipX + Math.sin(angle2) * rodLength;
+      const tip2Y = tipY - Math.cos(angle2) * rodLength;
+      ctx.strokeStyle = '#f6b86c'; ctx.lineWidth = 7;
+      ctx.beginPath(); ctx.moveTo(tipX, tipY); ctx.lineTo(tip2X, tip2Y); ctx.stroke();
+      ctx.fillStyle = '#ffd189'; ctx.beginPath(); ctx.arc(tip2X, tip2Y, 12, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.fillStyle = '#9dacbd'; ctx.font = '12px system-ui';
+    ctx.fillText(`${fmt(minCart, 3)} m`, 18, h - 12);
+    const rightLabel = `${fmt(maxCart, 3)} m`;
+    ctx.fillText(rightLabel, w - ctx.measureText(rightLabel).width - 18, h - 12);
+  }
+
+  function drawPlots() {
+    if (!samples.length) return;
+    plotSpecs[3][1] = $('metric').value;
+    for (const [id, name, color] of plotSpecs) {
+      const [ctx, w, h] = setupCanvas($(id));
+      const series = id === 'tiltPlot' && isDouble
+        ? [[name, color], ['measured_angle_2_deg', '#f6b86c']]
+        : [[name, color]];
+      const left = 32, right = 10, top = 8, bottom = 20;
+      const width = Math.max(1, w - left - right), height = Math.max(1, h - top - bottom);
+      let lo = Infinity, hi = -Infinity;
+      for (const row of samples) {
+        for (const [seriesName] of series) {
+          const value = numeric(row, seriesName);
+          if (Number.isFinite(value)) { lo = Math.min(lo, value); hi = Math.max(hi, value); }
+        }
+      }
+      if (!Number.isFinite(lo)) { lo = 0; hi = 1; }
+      if (hi === lo) { hi += 1; lo -= 1; }
+      const pad = (hi - lo) * .07; hi += pad; lo -= pad;
+      ctx.clearRect(0, 0, w, h);
+      ctx.strokeStyle = '#34495c'; ctx.lineWidth = 1;
+      for (let i = 0; i < 3; i++) {
+        const y = top + i * height / 2;
+        ctx.beginPath(); ctx.moveTo(left, y); ctx.lineTo(left + width, y); ctx.stroke();
+      }
+      ctx.fillStyle = '#91a6ba'; ctx.font = '10px system-ui';
+      ctx.fillText(hi.toPrecision(3), 1, top + 7);
+      ctx.fillText(lo.toPrecision(3), 1, top + height);
+      ctx.fillText(`${fmt(times.at(-1) - times[0], 1)} s`, Math.max(left, w - 41), h - 3);
+      const span = times.at(-1) - times[0] || 1;
+      for (const [seriesName, seriesColor] of series) {
+        ctx.strokeStyle = seriesColor; ctx.lineWidth = 1.5;
+        const mins = new Float64Array(Math.ceil(width) + 1).fill(Infinity);
+        const maxs = new Float64Array(Math.ceil(width) + 1).fill(-Infinity);
+        for (let i = 0; i < samples.length; i++) {
+          const value = numeric(samples[i], seriesName);
+          if (!Number.isFinite(value)) continue;
+          const bucket = Math.max(0, Math.min(mins.length - 1, Math.floor((times[i] - times[0]) / span * width)));
+          mins[bucket] = Math.min(mins[bucket], value);
+          maxs[bucket] = Math.max(maxs[bucket], value);
+        }
+        ctx.beginPath();
+        for (let i = 0; i < mins.length; i++) {
+          if (mins[i] === Infinity) continue;
+          const y1 = top + (hi - mins[i]) / (hi - lo) * height;
+          const y2 = top + (hi - maxs[i]) / (hi - lo) * height;
+          ctx.moveTo(left + i, y1); ctx.lineTo(left + i, y2);
+        }
+        ctx.stroke();
+      }
+    }
+    selectSample(selected);
+  }
+
+  function nearestIndex(time) {
+    let low = 0, high = times.length - 1;
+    while (low < high) {
+      const mid = (low + high) >> 1;
+      if (times[mid] < time) low = mid + 1; else high = mid;
+    }
+    return low > 0 && Math.abs(times[low - 1] - time) < Math.abs(times[low] - time) ? low - 1 : low;
+  }
+  function pause() { playing = false; $('play').textContent = 'Play'; }
+  function frame(now) {
+    if (playing && samples.length) {
+      if (lastFrame) playTime += (now - lastFrame) / 1000 * Number($('speed').value);
+      if (playTime >= times.at(-1)) { selectSample(samples.length - 1); pause(); }
+      else {
+        const next = nearestIndex(playTime);
+        if (next !== selected) selectSample(next, false);
+      }
+    }
+    lastFrame = now;
+    requestAnimationFrame(frame);
+  }
+  $('csvFile').addEventListener('change', event => loadFile(event.target.files[0]));
+  $('play').addEventListener('click', () => {
+    if (playing) pause();
+    else { if (selected === samples.length - 1) selectSample(0); playing = true; lastFrame = 0; $('play').textContent = 'Pause'; }
+  });
+  $('back').addEventListener('click', () => { pause(); selectSample(selected - 1); });
+  $('forward').addEventListener('click', () => { pause(); selectSample(selected + 1); });
+  $('seek').addEventListener('input', () => { pause(); selectSample(Math.round(Number($('seek').value) / 1000 * (samples.length - 1))); });
+  $('metric').addEventListener('change', drawPlots);
+  window.addEventListener('resize', () => { if (samples.length) { drawMovement(); drawPlots(); } });
+  const zone = $('dropZone');
+  zone.addEventListener('dragover', event => { event.preventDefault(); zone.classList.add('dragging'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('dragging'));
+  zone.addEventListener('drop', event => { event.preventDefault(); zone.classList.remove('dragging'); loadFile(event.dataTransfer.files[0]); });
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
