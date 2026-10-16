@@ -85,7 +85,7 @@ If you have a question about the system that we forgot to address:
 ## Current calibrated controllers and run review
 
 - Single pendulum: `Code/SinglePendulum/PythonMaster_autocalibrate.py`.
-- Double pendulum: `Code/DoublePendulum/PythonMasterControl2_autocalibrate.py`; its existing `control_matrices2.txt` supplies the model and gains.
+- Double pendulum: run `Code/DoublePendulum/PythonMaster2_auto.py` (the main controller) or `PythonMasterControl2.py` (a compatibility launcher); both start the same calibrated controller with receiver protocol v1. Its existing `control_matrices2.txt` supplies the model and gains. See [double-pendulum setup](Code/DoublePendulum/README.md).
 - Both controllers have `SHOW_BALANCING_LOGS` and `SAVE_RUN_CSV` switches near the top. Set either to `False` to disable routine balancing output or CSV recording. Sensor errors and faults remain visible.
 - The single controller supports live arrow-key offset adjustments; both controllers handle one unusable angle cycle with an estimator prediction and stop on repeated misses by default.
 - Keep each controller with its neighboring helper files when copying it to the Pi.
@@ -96,7 +96,7 @@ Hardware-free checks (Python with NumPy installed; Node.js for the visualizer):
 
 ```sh
 (cd Code/SinglePendulum && python3 -m unittest discover -p 'test_*.py')
-(cd Code/DoublePendulum && python3 -m unittest discover -p 'test_*.py')
+(cd Code/DoublePendulum && python3 -m unittest discover -s Tests -t . -p 'test_*.py')
 (cd Code/RunReview && node test_balancing_visualizer.js)
 ```
 

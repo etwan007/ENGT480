@@ -5,7 +5,7 @@ In this repository, the controllers and their helpers live in `Code/SinglePendul
 ## Record a run
 
 Both `PythonMaster_autocalibrate.py` (single pendulum) and
-`PythonMasterControl2_autocalibrate.py` (double pendulum) have these settings near the top:
+`PythonMaster2_auto.py` (double pendulum) have these settings near the top:
 
 - `SAVE_RUN_CSV = True` records the run. Set it to `False` to disable CSV logging.
 - `RUN_LOG_DIRECTORY` controls where files are saved. By default, the script creates a `run_logs` folder beside itself.
