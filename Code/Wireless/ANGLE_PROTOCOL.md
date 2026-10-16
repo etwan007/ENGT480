@@ -3,11 +3,13 @@
 The ESP32 receiver and current Python controllers must be deployed together.
 The older six-byte serial format is not supported by the new readers. With an
 old receiver, the new calibrated controllers fail during setup before sending a
-motor command. Older Python controllers do not understand the new frames: use
-`PythonMaster_autocalibrate.py` or `PythonMasterControl2_autocalibrate.py`.
-`CommunicationTest.py`, `PythonMaster.py`, `PythonMasterControl2.py`, and the
-historical/backup controllers still use the old format and must not be used
-with this receiver firmware.
+motor command. Use `PythonMaster_autocalibrate.py` for the single pendulum. For the double,
+`PythonMasterControl2.py` now launches `PythonMaster2_auto.py`,
+so either entry point uses the framed reader and startup calibration. Manual
+offsets and logging switches live in the calibrated script.
+`CommunicationTest.py`, `PythonMaster.py`, and historical/backup controllers
+(including `DoublePendulum/Archive/Test/`) still use the old format and must not be
+used with this receiver firmware.
 
 ## Deployment
 
@@ -116,7 +118,8 @@ The existing visualizer reads columns by name and supports both CSV versions.
 
 ## Verification
 
-Run each controller folder's `python3 -m unittest discover -p 'test_*.py'`.
+From the single-controller folder, run `python3 -m unittest discover -p 'test_*.py'`.
+From the double-controller folder, run `python3 -m unittest discover -s Tests -t . -p 'test_*.py'`.
 The protocol tests compile `tests/receiver_protocol_test.cpp` with a host C++
 compiler when available. That test includes the actual receiver sketch with
 mock ESP32 APIs, injects a receive update between clock capture and snapshot,

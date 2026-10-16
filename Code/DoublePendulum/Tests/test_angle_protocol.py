@@ -152,7 +152,7 @@ class AngleProtocolTests(unittest.TestCase):
         compiler = shutil.which('clang++') or shutil.which('g++')
         if compiler is None:
             self.skipTest('C++ compiler unavailable for receiver host test')
-        tests = Path(__file__).resolve().parents[1] / 'Wireless' / 'tests'
+        tests = Path(__file__).resolve().parents[2] / 'Wireless' / 'tests'
         with tempfile.TemporaryDirectory() as folder:
             binary = Path(folder) / 'receiver_test'
             subprocess.run([compiler, '-std=c++11', '-Wall', '-Wextra', '-Werror',

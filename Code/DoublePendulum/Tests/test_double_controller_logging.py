@@ -21,11 +21,11 @@ except ModuleNotFoundError:
     serial.SerialException = OSError
     sys.modules["serial"] = serial
 
-import PythonMasterControl2_autocalibrate as controller
+import PythonMaster2_auto as controller
 from angle_packet_fallback import MissingAnglePacketError
 from run_csv_logger import DOUBLE_COLUMNS
 from angle_protocol import AnglePacket, AnglePacketReader
-from test_angle_protocol import Port, frame
+from Tests.test_angle_protocol import Port, frame
 
 
 class FakePort:
