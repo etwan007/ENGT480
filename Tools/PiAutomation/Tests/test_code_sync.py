@@ -183,6 +183,16 @@ class SyncTests(unittest.TestCase):
         self.assertFalse(any('enable' in call.args[0] for call in service.call_args_list))
         self.assertEqual(len(list((home / 'Desktop').glob('*.desktop'))), 4)
         self.assertTrue((home / '.config/systemd/user/engt480-code-sync.timer').is_file())
+        uploader_installer = MODULE.parents[2] / 'Code/Global/install_log_upload.py'
+        uploader_spec = importlib.util.spec_from_file_location('upload_installer', uploader_installer)
+        uploader_module = importlib.util.module_from_spec(uploader_spec)
+        uploader_spec.loader.exec_module(uploader_module)
+        with patch.object(Path, 'home', return_value=home), patch.object(Path, 'is_dir', lambda p: True if str(p) == '/proc' else original_is_dir(p)), patch.object(uploader_module.shutil, 'which', return_value='/usr/bin/systemctl'), patch.object(uploader_module.subprocess, 'run'), patch.object(sys, 'argv', ['installer', '--remote', str(self.remote)]):
+            uploader_module.main()
+        reinstalled = json.loads(config_path.read_text())
+        self.assertEqual(reinstalled['repo'], legacy['repo'])
+        self.assertEqual(reinstalled['source_registry'], updated['source_registry'])
+        self.assertEqual(reinstalled['device'], legacy['device'])
 
     def test_launcher_holds_locks_until_child_exits_without_hardware(self):
         self.sync.sync()

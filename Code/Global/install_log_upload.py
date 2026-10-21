@@ -16,12 +16,18 @@ def quote_systemd(value):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--repo', type=Path, default=Path(__file__).resolve().parents[2])
+    parser.add_argument('--repo', type=Path)
     parser.add_argument('--remote', default='git@github.com:etwan007/ENGT480.git')
     parser.add_argument('--device')
     parser.add_argument('--ssh-key', type=Path)
     args = parser.parse_args()
-    repo = args.repo.resolve()
+    root = Path.home() / '.config/engt481-log-upload'
+    config_file = root / 'config.json'
+    old = json.loads(config_file.read_text()) if config_file.exists() else {}
+    default_repo = Path(old['repo']) if old.get('source_registry') else Path(__file__).resolve().parents[2]
+    repo = (args.repo or default_repo).resolve()
+    if old.get('source_registry') and repo != Path(old['repo']).resolve():
+        parser.error('Keep the legacy root; register new checkouts through code sync instead')
     if not (repo / 'Code').is_dir():
         parser.error('Repository must contain the Code directory')
     if not Path('/proc').is_dir() or shutil.which('systemctl') is None:
@@ -29,13 +35,15 @@ def main():
     root = Path.home() / '.config/engt481-log-upload'
     root.mkdir(parents=True, exist_ok=True)
     config_file = root / 'config.json'
-    old = json.loads(config_file.read_text()) if config_file.exists() else {}
     device = args.device or old.get('device') or (
         re.sub(r'[^A-Za-z0-9_-]', '-', socket.gethostname()) + '-' + uuid.uuid4().hex[:8])
     if not re.fullmatch(r'[A-Za-z0-9_-]+', device):
         parser.error('Device name must contain only letters, digits, _ or -')
     config = dict(repo=str(repo), cache=str(Path.home() / '.local/state/engt481-log-upload'),
                   remote=args.remote, device=device, idle_seconds=120)
+    for field in ('source_registry', 'sources'):
+        if field in old:
+            config[field] = old[field]
     if args.ssh_key:
         config['ssh_key'] = str(args.ssh_key.expanduser().resolve())
     elif old.get('ssh_key'):
