@@ -194,6 +194,81 @@ class SyncTests(unittest.TestCase):
         self.assertEqual(reinstalled['source_registry'], updated['source_registry'])
         self.assertEqual(reinstalled['device'], legacy['device'])
 
+    def publication_ready(self):
+        self.sync.sync()
+        self.git('-C', str(self.experiment), 'config', 'user.name', 'Pi Fixture')
+        self.git('-C', str(self.experiment), 'config', 'user.email', 'pi-fixture@localhost')
+        return self.experiment / 'Code/SinglePendulum/demo.py'
+
+    def test_publish_commits_and_pushes_source_but_excludes_csv_and_keeps_pause(self):
+        demo = self.publication_ready()
+        demo.write_text('print("new source")\n')
+        log = self.experiment / 'Code/SinglePendulum/run_logs/test.csv'
+        log.parent.mkdir(parents=True); log.write_text('must stay local')
+        (self.experiment / 'newfile.py').write_text('# new code\n')
+        (self.sync.state / 'pauses').mkdir(exist_ok=True)
+        (self.sync.state / 'pauses/Ethan_EXP').touch()
+        old_main = self.git('--git-dir', str(self.remote), 'rev-parse', 'main')
+        old_logs = self.git('--git-dir', str(self.remote), 'rev-parse', 'logs')
+        self.assertEqual(sync.publish(self.sync, 'Tune Pi source', 'Ethan_EXP', yes=True), 0)
+        self.assertEqual(self.git('--git-dir', str(self.remote), 'show', 'Ethan_EXP:Code/SinglePendulum/demo.py'), demo.read_text())
+        self.assertEqual(self.git('--git-dir', str(self.remote), 'rev-parse', 'main'), old_main)
+        self.assertEqual(self.git('--git-dir', str(self.remote), 'rev-parse', 'logs'), old_logs)
+        self.assertNotIn('run_logs', self.git('--git-dir', str(self.remote), 'ls-tree', '-r', '--name-only', 'Ethan_EXP'))
+        self.assertTrue(log.exists()); self.assertTrue(self.sync.paused('Ethan_EXP'))
+
+    def test_publish_refuses_main_and_remote_advance_without_staging(self):
+        demo = self.publication_ready()
+        with self.assertRaisesRegex(RuntimeError, 'experiment branch'):
+            sync.publish(self.sync, 'Do not touch main', 'main', yes=True)
+        demo.write_text('saved local edit\n')
+        self.advance()
+        before = (self.experiment / '.git/index').read_bytes()
+        with self.assertRaisesRegex(RuntimeError, 'GitHub has new'):
+            sync.publish(self.sync, 'Must reconcile', 'Ethan_EXP', yes=True)
+        self.assertEqual(before, (self.experiment / '.git/index').read_bytes())
+        self.assertEqual(demo.read_text(), 'saved local edit\n')
+
+    def test_publish_failed_push_keeps_commit_and_retry_does_not_duplicate_it(self):
+        demo = self.publication_ready(); demo.write_text('print("retry")\n')
+        original = self.sync.git
+        def fail_push(*args, **kwargs):
+            if args[0] == 'push': raise RuntimeError('simulated network outage')
+            return original(*args, **kwargs)
+        with patch.object(self.sync, 'git', side_effect=fail_push), self.assertRaisesRegex(RuntimeError, 'saved locally'):
+            sync.publish(self.sync, 'Retry safely', 'Ethan_EXP', yes=True)
+        commit = self.git('-C', str(self.experiment), 'rev-parse', 'HEAD').strip()
+        sync.publish(self.sync, 'Retry safely', 'Ethan_EXP', yes=True)
+        self.assertEqual(commit, self.git('-C', str(self.experiment), 'rev-parse', 'HEAD').strip())
+        self.assertEqual(commit, self.git('--git-dir', str(self.remote), 'rev-parse', 'Ethan_EXP').strip())
+
+    def test_publish_cancellation_and_run_lock_preserve_index(self):
+        demo = self.publication_ready(); demo.write_text('unsent work\n')
+        before = (self.experiment / '.git/index').read_bytes()
+        with patch('builtins.input', return_value='n'):
+            sync.publish(self.sync, 'Cancelled', 'Ethan_EXP')
+        self.assertEqual(before, (self.experiment / '.git/index').read_bytes())
+        with sync.lock(self.sync.state / 'rig.lock'), self.assertRaises(BlockingIOError):
+            sync.publish(self.sync, 'Blocked', 'Ethan_EXP', yes=True)
+        self.assertEqual(before, (self.experiment / '.git/index').read_bytes())
+
+    def test_publish_detects_current_checkout_and_noop(self):
+        self.publication_ready()
+        with patch.object(sync.Path, 'cwd', return_value=self.experiment / 'Code/SinglePendulum'):
+            self.assertEqual(sync.publish(self.sync, 'Nothing new', yes=True), 0)
+        with patch.object(sync.Path, 'cwd', return_value=self.root), self.assertRaisesRegex(RuntimeError, 'Run inside'):
+            sync.publish(self.sync, 'Wrong directory', yes=True)
+
+    def test_publish_refuses_already_staged_run_logs(self):
+        self.publication_ready()
+        log = self.experiment / 'Code/SinglePendulum/run_logs/test.csv'
+        log.parent.mkdir(parents=True); log.write_text('must stay local')
+        self.git('-C', str(self.experiment), 'add', '-f', str(log))
+        before = (self.experiment / '.git/index').read_bytes()
+        with self.assertRaisesRegex(RuntimeError, 'already staged'):
+            sync.publish(self.sync, 'Do not publish CSV', 'Ethan_EXP', yes=True)
+        self.assertEqual(before, (self.experiment / '.git/index').read_bytes())
+
     def test_launcher_holds_locks_until_child_exits_without_hardware(self):
         self.sync.sync()
         marker = self.root / 'ready'

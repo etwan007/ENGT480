@@ -52,6 +52,47 @@ create checkouts, or update registry/refs; operational directories/locks may be
 created. On errors, existing controller files and CSVs are retained. Fix the
 reported local state manually, then resume. There is no automatic reset/rebase.
 
+## Commit and push Pi edits
+
+The Pi's persistent `engt` alias calls the installed tool. From inside your
+experiment checkout, save files and use:
+
+```sh
+cd ~/Desktop/Experiments/Ethan_EXP
+engt publish "Tune transmitter timing"
+```
+
+It shows saved changes and any unpublished commits, asks for confirmation,
+stages nonignored source changes, commits with your Git author, and pushes to
+that experiment's existing branch. Generated `run_logs`, Python caches, and
+bytecode are excluded; already staged generated files must be unstaged first.
+The automatic updater still only downloads code. CSV backups still push only
+logs through their separate service.
+
+From another directory, select the checkout explicitly:
+
+```sh
+engt publish "Tune transmitter timing" --checkout Ethan_EXP
+```
+
+Publishing holds update/run locks and preserves your global/per-checkout pause
+settings. It refuses main/logs, unexpected checkouts, and remote history that
+needs reconciliation; it never pulls, rebases, or force-pushes. If a push fails,
+the commit remains local; repeating the command retries it without creating an
+extra empty commit. No source edits or unpublished commits means no commit/push.
+`--yes` skips the changes confirmation when you deliberately want that behavior.
+
+The command uses the configured repository SSH key for the explicit push,
+while taking author name/email from the checkout's effective Git configuration.
+Set your own author in that checkout before publishing if necessary:
+
+```sh
+git config --local user.name "Your Name"
+git config --local user.email "your-email@example.com"
+```
+
+To load the alias in an older terminal session, use `source ~/.bashrc`.
+
 ## CSV backups
 
 One existing uploader continues to push only to the `logs` branch using the

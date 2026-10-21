@@ -147,7 +147,7 @@ class Synchronizer:
             return 'main', self.workspace / 'ENGT480'
         return safe_name(branch), self.workspace / 'Experiments' / safe_name(branch)
 
-    def validate(self, path, branch):
+    def validate(self, path, branch, allow_dirty=False):
         if path.is_symlink() or path.resolve() != path or not path.is_dir():
             raise RuntimeError('Unexpected or symlink checkout path')
         if path.stat().st_uid != os.getuid() or not (path / '.git').is_dir():
@@ -168,7 +168,7 @@ class Synchronizer:
                      'REVERT_HEAD', 'rebase-merge', 'rebase-apply', 'sequencer']:
             if (path / '.git' / item).exists():
                 raise RuntimeError('Another Git operation is in progress')
-        if self.git('status', '--porcelain', '--untracked-files=all', cwd=path).stdout:
+        if not allow_dirty and self.git('status', '--porcelain', '--untracked-files=all', cwd=path).stdout:
             raise RuntimeError('Local edits or untracked files; save/commit/push before resuming')
 
     def create(self, path, branch):
@@ -334,6 +334,78 @@ def run_controller(sync, identifier=None, script=None, script_args=()):
                 signal.signal(signum, handler)
 
 
+
+def publish(sync, message, identifier=None, yes=False):
+    """Explicitly stage, commit and non-force push the selected experiment."""
+    if not message.strip():
+        raise RuntimeError('Give a commit message, for example: engt publish "Tune TX timing"')
+    registry = sync.registry()['checkouts']
+    if identifier is None:
+        here = Path.cwd().resolve()
+        matches = [r['id'] for r in registry.values()
+                   if here == Path(r['path']) or Path(r['path']) in here.parents]
+        if len(matches) != 1:
+            raise RuntimeError('Run inside an experiment checkout, or add --checkout Ethan_EXP')
+        identifier = matches[0]
+    if identifier not in registry:
+        raise RuntimeError('Unknown checkout ID')
+    record = registry[identifier]
+    branch, root = record['branch'], Path(record['path'])
+    if identifier == 'main' or branch in {'main', 'logs', sync.config.get('main_branch', 'main')}:
+        raise RuntimeError('Publish from an experiment branch; merge into main through a pull request')
+    with lock(sync.state / 'update.lock'), lock(sync.state / 'rig.lock'), lock(sync.state / 'locks' / (identifier + '.lock')):
+        sync.validate(root, branch, allow_dirty=True)
+        sync.git('fetch', '--no-tags', 'origin', 'refs/heads/' + branch, cwd=root, timeout=300)
+        remote = sync.git('rev-parse', 'FETCH_HEAD', cwd=root).stdout.strip()
+        head = sync.git('rev-parse', 'HEAD', cwd=root).stdout.strip()
+        if sync.git('merge-base', '--is-ancestor', remote, head, cwd=root, check=False).returncode:
+            raise RuntimeError('GitHub has new or diverged commits. Local work is unchanged; reconcile before publishing')
+        staged = sync.git('diff', '--cached', '--name-only', '-z', cwd=root).stdout.split('\0')
+        generated = lambda name: '/run_logs/' in '/' + name or '/__pycache__/' in '/' + name or name.endswith(('.pyc', '.pyo'))
+        if any(generated(name) for name in staged if name):
+            raise RuntimeError('Generated logs/cache files are already staged. Unstage them before publishing')
+        status = sync.git('status', '--short', '--untracked-files=all', cwd=root).stdout
+        ahead = sync.git('log', '--oneline', remote + '..HEAD', cwd=root).stdout
+        if not status and not ahead:
+            print('No changes or unpublished commits.', flush=True)
+            return 0
+        identity = {}
+        environment = dict(os.environ)
+        for field in ('user.name', 'user.email'):
+            result = subprocess.run(['git', '-C', str(root), 'config', '--get', field],
+                                    capture_output=True, text=True, env=environment)
+            if result.returncode or not result.stdout.strip():
+                raise RuntimeError('Configure this checkout\'s Git author first: git config --local ' + field + ' "your value"')
+            identity[field] = result.stdout.strip()
+        print('Checkout:', root, '\nBranch:', branch, '\nAuthor:', identity['user.name'], '<' + identity['user.email'] + '>', flush=True)
+        if status:
+            print('Saved changes (generated logs/caches are excluded):\n' + status, flush=True)
+            print(sync.git('diff', '--stat', 'HEAD', cwd=root).stdout, flush=True)
+        if ahead:
+            print('Existing local commits that will also be pushed:\n' + ahead, flush=True)
+        if not yes and input('Stage all source changes, commit, and push to ' + branch + '? [y/N] ').strip().lower() not in {'y', 'yes'}:
+            print('Cancelled; files and staging area are unchanged.')
+            return 0
+        if status:
+            sync.git('add', '--all', '--', '.', ':(glob,exclude)**/run_logs/**',
+                     ':(glob,exclude)**/__pycache__/**', ':(glob,exclude)**/*.pyc',
+                     ':(glob,exclude)**/*.pyo', cwd=root)
+            if sync.git('diff', '--cached', '--quiet', cwd=root, check=False).returncode:
+                sync.git('diff', '--cached', '--check', cwd=root)
+                sync.git('-c', 'user.name=' + identity['user.name'], '-c', 'user.email=' + identity['user.email'],
+                         'commit', '-m', message, cwd=root, timeout=300)
+        committed = sync.git('rev-parse', 'HEAD', cwd=root).stdout.strip()
+        if committed == remote:
+            print('No source changes to commit or push. Generated files remain local.')
+            return 0
+        try:
+            sync.git('push', 'origin', 'HEAD:refs/heads/' + branch, cwd=root, timeout=300)
+        except RuntimeError as exc:
+            raise RuntimeError('Push failed; your commit is saved locally. Retry engt publish with the same message after resolving the issue. ' + str(exc)) from exc
+        print('Published ' + committed[:7] + ' to ' + branch + '. Pause settings are unchanged.', flush=True)
+        return 0
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--config', type=Path, default=DEFAULT_CONFIG)
@@ -346,9 +418,15 @@ def main():
     run.add_argument('checkout', nargs='?')
     run.add_argument('script', nargs='?')
     run.add_argument('script_args', nargs=argparse.REMAINDER)
+    publication = sub.add_parser('publish', help='Commit and push source changes from an experiment checkout')
+    publication.add_argument('message')
+    publication.add_argument('--checkout')
+    publication.add_argument('--yes', action='store_true', help='Skip the interactive changes confirmation')
     args = parser.parse_args()
     try:
         sync = Synchronizer(read_json(args.config))
+        if args.command == 'publish':
+            return publish(sync, args.message, args.checkout, args.yes)
         if args.command == 'sync':
             try:
                 result = sync.sync(args.dry_run)
@@ -377,7 +455,7 @@ def main():
         return 0
     except KeyboardInterrupt:
         return 130
-    except (OSError, RuntimeError, ValueError, TypeError) as exc:
+    except (OSError, RuntimeError, ValueError, TypeError, EOFError) as exc:
         print('ENGT480:', str(exc), file=sys.stderr)
         return 1
 
