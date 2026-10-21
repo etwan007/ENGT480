@@ -238,15 +238,15 @@ Ld, Pd, Edkalm = ctrl.dlqe(ssDisc.A, sp.diag(1,1,1,1), ssDisc.C, sp.diag(0.5,0.5
 Ival_eff       = Ival + m1val * lval**2
 E_ref          = m1val * gval * lval
 
-k_energy       = 15.0    # positive gain on (E_ref - E_pend), NOT the old velocity gain
-a_max_swing    = 2.0     # max commanded cart acceleration, including braking (m/s²)
+k_energy       = 60.0    # positive gain on (E_ref - E_pend), NOT the old velocity gain
+a_max_swing    = 3.0     # max commanded cart acceleration, including braking (m/s²)
 v_max_swing    = 0.40    # max cart speed during swing-up (m/s)
-k_center       = 0.5     # soft cart-centering acceleration gain
+k_center       = 10.0     # soft cart-centering acceleration gain
 hesitation_s   = 0.05    # hold near zero speed AFTER braking at each swing reversal
 reversal_speed = 0.4     # angular-speed hysteresis avoids repeated pauses from noise
-startup_kick_s = 0.15    # one bounded kick to leave the still-hanging equilibrium
+startup_kick_s = 0.45    # one bounded kick to leave the still-hanging equilibrium
 
-theta_catch    = 0.35    # radians (~20°) from upright: attempt LQG catch inside this
+theta_catch    = 0.5    # radians (~20°) from upright: attempt LQG catch inside this
 thetaDot_catch = 5.0     # max |θ̇| (rad/s) allowed when switching to LQG
 theta_fallback = 1.0     # if LQG loses it past this angle (rad), return to swing-up
  
@@ -548,10 +548,12 @@ try:
         if mode == MODE_SWINGUP:
             current_stage = "swing-up energy control"
 
-
             xDiv_swing = swing_controller.update(
-                theta1, theta_dot_est, x, swing_dt,
+                measured_theta if measured_theta is not None else theta1,
+                theta_dot_est, x, swing_dt,
                 valid_measurement=measured_theta is not None)
+            YfinalEst[3, 0] = xDiv_swing      # keep the Kalman cart speed equal to the real cart speed
+            Ylast = YfinalEst.copy()
             swing_message = (f"mode=SWING_UP; phase={swing_controller.phase}; "
                              f"energy_j={E_pend:.6f}; target_energy_j={E_ref:.6f}; "
                              f"cart_velocity_command_m_s={xDiv_swing:.6f}")
