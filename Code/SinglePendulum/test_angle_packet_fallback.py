@@ -1,8 +1,16 @@
+# Resolve shared modules from this file, including when launched in Thonny.
+import sys
+from pathlib import Path
+
+CODE_DIRECTORY = Path(__file__).resolve().parents[1]
+if str(CODE_DIRECTORY) not in sys.path:
+    sys.path.insert(0, str(CODE_DIRECTORY))
+
 import unittest
 
 import numpy as np
 
-from angle_packet_fallback import (MissingAnglePacketError, collect_valid_samples,
+from Global.angle_packet_fallback import (MissingAnglePacketError, collect_valid_samples,
                                    estimate_with_angle)
 
 

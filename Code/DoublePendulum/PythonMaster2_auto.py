@@ -4,25 +4,34 @@ Run on the Raspberry Pi with the ESP32 receiver and Arduino motor controller.
 Both links must hang motionless for calibration. This script does not swing them up.
 """
 
+# Resolve shared modules from this file, including when launched in Thonny.
+import sys
+from pathlib import Path
+
+CODE_DIRECTORY = Path(__file__).resolve().parents[1]
+if str(CODE_DIRECTORY) not in sys.path:
+    sys.path.insert(0, str(CODE_DIRECTORY))
+
+
 import re
 import struct
 import time
 import traceback
 import json
 from datetime import datetime
-from pathlib import Path
 
 import numpy as np
 import serial
 
-from run_csv_logger import DOUBLE_COLUMNS, RunCsvLogger
-from angle_protocol import AnglePacketReader, AngleProtocolError, packet_csv_values
-from angle_packet_fallback import MissingAnglePacketError, collect_valid_samples
+from Global.run_csv_logger import DOUBLE_COLUMNS, RunCsvLogger
+from Global.angle_protocol import AnglePacketReader, AngleProtocolError, packet_csv_values
+from Global.angle_packet_fallback import MissingAnglePacketError, collect_valid_samples
 
 
-ENCODER_COUNTS = 16384
+from Global.physical_parameters import (
+    ENCODER_COUNTS, SAMPLE_PERIOD_S, DISTANCE_PER_6400_STEPS_M,
+)
 HALF_TURN = ENCODER_COUNTS // 2
-SAMPLE_PERIOD_S = 0.01
 HANGING_SAMPLES = 50
 UPRIGHT_SAMPLES = 10
 SAMPLE_SPACING_S = 0.02
@@ -30,7 +39,6 @@ MAX_HANGING_DEVIATION_COUNTS = 80
 MAX_START_ANGLE_DEG = 12
 MAX_RUNNING_ANGLE_RAD = 1.0
 STATUS_INTERVAL_S = 0.5
-DISTANCE_PER_6400_STEPS_M = 0.638175
 # Positive offsets subtract degrees from the corresponding reported angle.
 # Arm 1's offset also affects arm 2's absolute angle because theta2 = theta1 + joint2.
 ARM1_OFFSET_DEG = 0.0

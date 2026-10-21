@@ -3,7 +3,7 @@
 The ESP32 receiver and current Python controllers must be deployed together.
 The older six-byte serial format is not supported by the new readers. With an
 old receiver, the new calibrated controllers fail during setup before sending a
-motor command. Use `PythonMaster_autocalibrate.py` for the single pendulum. For the double,
+motor command. Use `PythonMaster_auto.py` for the single pendulum. For the double,
 `PythonMasterControl2.py` now launches `PythonMaster2_auto.py`,
 so either entry point uses the framed reader and startup calibration. Manual
 offsets and logging switches live in the calibrated script.
@@ -17,11 +17,11 @@ used with this receiver firmware.
    Arduino IDE. Keep `angle_protocol.h` in the same sketch folder. Compile and
    upload for the actual receiver board, using Arduino ESP32 core 3.x (the
    receive callback uses the 3.x API, as did the preceding receiver).
-2. Copy the updated controller folder to the Pi, including `angle_protocol.py`,
-   `angle_packet_fallback.py`, `run_csv_logger.py`, and, for the single
-   controller, `live_offset_keys.py`. Keep the existing double-controller
-   `control_matrices2.txt` beside its script.
-3. With motor power off, run `Code/SinglePendulum/AngleSensorDiagnostic.py`.
+2. Copy `Code/Global/` and the updated controller folder to the Pi as sibling
+   directories, preserving the `Code/Global`, `Code/SinglePendulum` and
+   `Code/DoublePendulum` layout. All shared angle, CSV and keyboard helpers
+   live in `Global`. Keep double-controller `control_matrices2.txt` beside its script.
+3. With motor power off, run `Code/Global/AngleSensorDiagnostic.py`.
    Confirm the active channel reports `valid` with a changing raw angle and
    the inactive channels report `never_received` (or `wireless_timeout` if
    their transmitters were previously powered on).
@@ -129,3 +129,8 @@ Other tests cover every frame split, inserted/deleted/corrupted bytes, bounded
 backlogs, statuses, CSV fields, and the controller fallback/stop paths.
 A host simulation is not a hardware validation or a substitute for compiling
 and uploading for the actual board.
+
+
+Shared Python configuration and utilities now live in `Code/Global/`.
+Deploy the entire `Global` folder as a sibling of `SinglePendulum` and
+`DoublePendulum`; see [shared directory guide](../Global/README.md).

@@ -6,8 +6,11 @@ This is the main calibrated controller. The repository also retains
 Configure offsets, missing-reading limits, and CSV switches near the top of
 `PythonMaster2_auto.py`.
 
-Deploy `PythonMaster2_auto.py` and its runtime helpers to the Pi, including `angle_protocol.py`,
-`angle_packet_fallback.py`, `run_csv_logger.py`, and `control_matrices2.txt`.
+Deploy `Code/Global/` alongside `Code/DoublePendulum/` on the Pi. Keep
+`control_matrices2.txt` beside `PythonMaster2_auto.py`; the logger and angle
+helpers are imported from `Global`. Physical measurements are configured in
+`Global/physical_parameters.py`; regenerate the matrices with
+`PythonMasterMath2.py` after changing double-arm measurements or sample period.
 The receiver must run the matching [v1 firmware](../Wireless/ANGLE_PROTOCOL.md).
 USB serial remains 921600 baud; the Arduino motor link remains 115200 baud.
 The receiver sends 37-byte frames containing all three angle channels,
@@ -69,3 +72,8 @@ their moves, including all 13 recorded CSV runs. The main controller, runtime
 helpers, current model tools, and active matrices stayed in place. These Pi
 filesystem moves were performed separately from the repository changes; the
 Pi-only archived scripts and recorded runs have not been copied into this repo.
+
+
+Shared Python configuration and utilities now live in `Code/Global/`.
+Deploy the entire `Global` folder as a sibling of `SinglePendulum` and
+`DoublePendulum`; see [shared directory guide](../Global/README.md).

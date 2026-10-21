@@ -1,6 +1,6 @@
 # Changes from `PythonMaster.py` to `PythonMaster_autocalibrate.py`
 
-This document compares the two files in `Code/SinglePendulum/`. The modified script is named `PythonMaster_autocalibrate.py` in this repository; a copy on the Raspberry Pi may be named `PythonMaster_auto.py`.
+This document records the original calibration changes from `PythonMaster.py`. The current controller is `Code/SinglePendulum/PythonMaster_auto.py` (previously `PythonMaster_autocalibrate.py`). The serial-packet descriptions below are historical; see `Code/Wireless/ANGLE_PROTOCOL.md` for the current receiver protocol and `Code/Global/README.md` for shared configuration and helpers.
 
 ## What happens during a run now
 

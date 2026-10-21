@@ -1,9 +1,17 @@
 """Exercise terminal input and the actual controller loop without motor hardware."""
 
+# Resolve shared modules from this file, including when launched in Thonny.
+import sys
+from pathlib import Path
+
+CODE_DIRECTORY = Path(__file__).resolve().parents[1]
+if str(CODE_DIRECTORY) not in sys.path:
+    sys.path.insert(0, str(CODE_DIRECTORY))
+
+
 import ast
 import io
 import os
-from pathlib import Path
 import pty
 import struct
 import termios
@@ -14,10 +22,11 @@ from unittest.mock import Mock
 
 import numpy as np
 
-from angle_packet_fallback import MissingAnglePacketError, estimate_with_angle
-from live_offset_keys import LiveOffsetKeys
-from run_csv_logger import COLUMNS
-from angle_protocol import AnglePacketReader, packet_csv_values
+from Global.angle_packet_fallback import MissingAnglePacketError, estimate_with_angle
+from Global.live_offset_keys import LiveOffsetKeys
+from Global.run_csv_logger import COLUMNS
+from Global.physical_parameters import DISTANCE_PER_6400_STEPS_M
+from Global.angle_protocol import AnglePacketReader, packet_csv_values
 
 
 class LiveOffsetTests(unittest.TestCase):
@@ -69,7 +78,7 @@ class LiveOffsetTests(unittest.TestCase):
     def test_controller_applies_keys_before_measurement_and_missing_angle_prediction(self):
         # Execute the actual loop with fake serial devices and deterministic matrices.
         # Loading the whole script would open hardware and derive the model.
-        source = Path(__file__).with_name("PythonMaster_autocalibrate.py").read_text()
+        source = Path(__file__).with_name("PythonMaster_auto.py").read_text()
         tree = ast.parse(source)
         loop = next(node for node in tree.body if isinstance(node, ast.Try)
                     and any(isinstance(child, ast.While) for child in node.body))
@@ -95,6 +104,7 @@ class LiveOffsetTests(unittest.TestCase):
                            MissingAnglePacketError=MissingAnglePacketError,
                            automatic_correction=16383.0, correction=16383.0,
                            UPRIGHT_OFFSET_DEG=0.0, LIVE_OFFSET_STEP_DEG=0.05,
+                           DISTANCE_PER_6400_STEPS_M=DISTANCE_PER_6400_STEPS_M,
                            ENCODER_COUNTS=16384, cycle_count=0, loop=0,
                            previous_cycle_started=None, run_started_at=time.monotonic(),
                            u=np.zeros((1, 1)), Ylast=np.zeros((4, 1)),

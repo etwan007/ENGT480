@@ -1,15 +1,22 @@
 """Short hardware-free exercise of the double controller's CSV path."""
 
+# Resolve shared modules from this file, including when launched in Thonny.
+import sys
+from pathlib import Path
+
+CODE_DIRECTORY = Path(__file__).resolve().parents[2]
+if str(CODE_DIRECTORY) not in sys.path:
+    sys.path.insert(0, str(CODE_DIRECTORY))
+
+
 import csv
 import io
 import json
 import struct
-import sys
 import tempfile
 import types
 import unittest
 from contextlib import redirect_stderr, redirect_stdout
-from pathlib import Path
 from unittest.mock import patch
 
 import numpy as np
@@ -22,9 +29,9 @@ except ModuleNotFoundError:
     sys.modules["serial"] = serial
 
 import PythonMaster2_auto as controller
-from angle_packet_fallback import MissingAnglePacketError
-from run_csv_logger import DOUBLE_COLUMNS
-from angle_protocol import AnglePacket, AnglePacketReader
+from Global.angle_packet_fallback import MissingAnglePacketError
+from Global.run_csv_logger import DOUBLE_COLUMNS
+from Global.angle_protocol import AnglePacket, AnglePacketReader
 from Tests.test_angle_protocol import Port, frame
 
 

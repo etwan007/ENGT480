@@ -1,6 +1,14 @@
 """Transport regressions, including a fixture emitted by the real C++ encoder."""
-import binascii
+
+# Resolve shared modules from this file, including when launched in Thonny.
+import sys
 from pathlib import Path
+
+CODE_DIRECTORY = Path(__file__).resolve().parents[1]
+if str(CODE_DIRECTORY) not in sys.path:
+    sys.path.insert(0, str(CODE_DIRECTORY))
+
+import binascii
 import shutil
 import struct
 import subprocess
@@ -8,7 +16,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from angle_protocol import (AnglePacketReader, AngleProtocolError, decode_frame,
+from Global.angle_protocol import (AnglePacketReader, AngleProtocolError, decode_frame,
                             packet_csv_values, TELEMETRY_COLUMNS, FRAME_SIZE, MAGIC)
 
 

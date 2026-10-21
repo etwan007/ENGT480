@@ -104,7 +104,7 @@ Names are case-sensitive. Use a descriptive person/task name with one of these a
 - Downloading an experiment never starts it automatically.
 - Before switching computers, commit and push your work. On the other computer, pull the latest changes before editing.
 
-See the [installed Desktop setup](https://github.com/etwan007/ENGT480/blob/Ethan_EXP/GeneralDocumentation/PI_AUTOMATION_SETUP.md) for shortcuts and verified backup coverage. For AI assistants and implementation details, see the [repository and Pi workflow reference](https://github.com/etwan007/ENGT480/blob/Ethan_EXP/GeneralDocumentation/REPOSITORY_AND_PI_WORKFLOW.md) and [automation operating guide](https://github.com/etwan007/ENGT480/blob/Ethan_EXP/Tools/PiAutomation/README.md).
+See the [installed Desktop setup](GeneralDocumentation/PI_AUTOMATION_SETUP.md) for shortcuts and verified backup coverage. For AI assistants and implementation details, see the [repository and Pi workflow reference](GeneralDocumentation/REPOSITORY_AND_PI_WORKFLOW.md) and [automation operating guide](Tools/PiAutomation/README.md).
 
 FROM LAST YEAR <
 
@@ -209,4 +209,4 @@ and must not be run with the updated receiver. The Arduino motor protocol is unc
 
 Shared Python configuration and utilities now live in `Code/Global/`.
 Deploy the entire `Global` folder as a sibling of `SinglePendulum` and
-`DoublePendulum`; see [shared directory guide](https://github.com/etwan007/ENGT480/blob/Ethan_EXP/Code/Global/README.md).
+`DoublePendulum`; see [shared directory guide](Code/Global/README.md).
