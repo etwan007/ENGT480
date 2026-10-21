@@ -1,0 +1,3 @@
+t_s,seg,test,kind,text
+39.438577,0,still_off,test,"start still_off (still) {""seconds"": 5.0, ""motor"": ""off""}"
+51.611260,0,still_off,stop,Ctrl+C: braking and saving

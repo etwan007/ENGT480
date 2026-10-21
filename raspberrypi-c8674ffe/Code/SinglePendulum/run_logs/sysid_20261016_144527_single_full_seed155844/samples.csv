@@ -1,0 +1,1 @@
+t_s,cycle,seg,test,phase,cycle_ms,wait_ms,frames,rx_seq,rx_ms,raw1,age1_ms,raw2,age2_ms,psi1_deg,rate1_deg_s,psi2_deg,joint_deg,rate2_deg_s,amp1_deg,amp2_deg,amp_energy_deg,x_ref_m,v_ref_m_s,a_ref_m_s2,a_cmd_m_s2,v_req_m_s,timer_cmd,v_cmd_m_s,step_hz,t_write_s,reply_ms,steps,x_steps_m,x_pred_m,scale,flags
