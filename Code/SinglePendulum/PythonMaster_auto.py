@@ -1,23 +1,32 @@
+# Resolve shared modules from this file, including when launched in Thonny.
+import sys
+from pathlib import Path
+
+CODE_DIRECTORY = Path(__file__).resolve().parents[1]
+if str(CODE_DIRECTORY) not in sys.path:
+    sys.path.insert(0, str(CODE_DIRECTORY))
+
 import numpy as np
 import sympy as sp
 import control as ctrl
 import serial
 import time
 import struct
-import sys
 import atexit
 import traceback
 import json
 from datetime import datetime
-from pathlib import Path
 
-from run_csv_logger import RunCsvLogger
-from angle_protocol import AnglePacketReader, AngleProtocolError, packet_csv_values
-from live_offset_keys import LiveOffsetKeys
-from angle_packet_fallback import (MissingAnglePacketError, collect_valid_samples,
+from Global.run_csv_logger import RunCsvLogger
+from Global.angle_protocol import AnglePacketReader, AngleProtocolError, packet_csv_values
+from Global.live_offset_keys import LiveOffsetKeys
+from Global.angle_packet_fallback import (MissingAnglePacketError, collect_valid_samples,
                                    estimate_with_angle)
 
-ENCODER_COUNTS = 16384
+from Global.physical_parameters import (
+    SINGLE_ARM, SINGLE_CART_MASS_KG, SINGLE_CART_DRAG, SINGLE_PIVOT_DRAG,
+    GRAVITY_M_S2, SAMPLE_PERIOD_S, ENCODER_COUNTS, DISTANCE_PER_6400_STEPS_M,
+)
 HALF_TURN = ENCODER_COUNTS // 2
 LOG_INTERVAL_SECONDS = 0.5
 # Added to the automatically calibrated upright reference. Positive values
@@ -153,7 +162,7 @@ def positionRead():
     positionRaw = struct.unpack('>h', line2)[0]
     latest_position_steps = positionRaw
     arduino.reset_input_buffer()
-    return (positionRaw * 0.638175) / 6400
+    return (positionRaw * DISTANCE_PER_6400_STEPS_M) / 6400
 
 #define symbols and symbol properties
 t,g,l,m1,mcart,B_cart_drag = sp.symbols('t g l m1 mcart B_cart_drag', positive = True)
@@ -162,27 +171,20 @@ x = sp.Function('x')(t) #define x as a function of t
 I,H,V,F,T_drag = sp.symbols('I H V F T_drag', real = True)
 
 #Sample Period
-Ts = 1/100
+Ts = SAMPLE_PERIOD_S
 
 #0.5N rolling friction
 
-#actual system values
-length = 0.2
-lval = 0.05 #(mweight*length+mrod*(length/2))/(mweight+mrod) #in meters (center of mass)  #FIX THIS YOU IDIOT
-Ival = 0.003 #((mweight + (mrod/3))*lval**2) #rotational inertia
-m1val = 0.260 #mweight + mrod #in kg
+# Physical measurements are maintained in Code/Global/physical_parameters.py.
+length = SINGLE_ARM.length_m
+lval = SINGLE_ARM.center_of_mass_m
+Ival = SINGLE_ARM.inertia_kg_m2
+m1val = SINGLE_ARM.mass_kg
+T_dragVal = SINGLE_PIVOT_DRAG
+mcartVal = SINGLE_CART_MASS_KG
+B_cart_dragVal = SINGLE_CART_DRAG
+gval = GRAVITY_M_S2
 
-#actual system values
-# length = 0.25
-# mweight = 0.031 #weight of pendulum weight
-# mrod = 0.072 #weight of pendulum arm
-# lval = 0.16 #(mweight*length+mrod*(length/2))/(mweight+mrod) #in meters (center of mass)
-T_dragVal = 0.0 #pendulum drag force
-# Ival = ((mweight + (mrod/3))*length**2) #rotational inertia
-mcartVal = 0.969 #in kg
-B_cart_dragVal = 0.5 #drag coefficient
-gval = 9.81 #gravitational constant
-# m1val = mweight + mrod #in kg
 #substitutions
 vals = {m1:m1val,mcart:mcartVal,l:lval,g:gval,I:Ival,T_drag:T_dragVal,B_cart_drag:B_cart_dragVal}
 
@@ -505,7 +507,7 @@ try:
         xDiv = YfinalEst[3].item() #pull velocity from kalman filter estimation
 #         print(round(xDiv,2))
         
-        f = -(xDiv * 6400) / 0.638175 #conversion based on measured distance per pulse
+        f = -(xDiv * 6400) / DISTANCE_PER_6400_STEPS_M #conversion based on measured distance per pulse
         
         #convert frequency to timer top value
         if f > 2 or f < -2:

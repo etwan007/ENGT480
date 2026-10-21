@@ -1,12 +1,21 @@
 """Inspect framed ESP32 angles and dropout reasons with motor power OFF."""
 
+# Resolve shared modules from this file, including when launched in Thonny.
+import sys
+from pathlib import Path
+
+CODE_DIRECTORY = Path(__file__).resolve().parents[1]
+if str(CODE_DIRECTORY) not in sys.path:
+    sys.path.insert(0, str(CODE_DIRECTORY))
+
+
 import time
 import serial
-from angle_protocol import AnglePacketReader, AngleProtocolError, VALID, UNKNOWN_AGE
+from Global.angle_protocol import AnglePacketReader, AngleProtocolError, VALID, UNKNOWN_AGE
 
 PORT = '/dev/ttyUSB0'
 BAUD = 921600
-ENCODER_COUNTS = 16384
+from Global.physical_parameters import ENCODER_COUNTS
 PRINT_INTERVAL = 0.2
 
 
@@ -15,7 +24,7 @@ def format_channel(packet, index, baseline):
     detail = packet.channel_message(index)
     if packet.statuses[index] != VALID:
         return f'{detail} MISSING'
-    change = 0 if baseline is None else (value - baseline + 8192) % 16384 - 8192
+    change = 0 if baseline is None else (value - baseline + ENCODER_COUNTS // 2) % ENCODER_COUNTS - ENCODER_COUNTS // 2
     return f'{detail} raw={value} change={change * 360 / ENCODER_COUNTS:+.2f}deg'
 
 

@@ -1,9 +1,16 @@
+# Resolve shared modules from this file, including when launched in Thonny.
+import sys
+from pathlib import Path
+
+CODE_DIRECTORY = Path(__file__).resolve().parents[1]
+if str(CODE_DIRECTORY) not in sys.path:
+    sys.path.insert(0, str(CODE_DIRECTORY))
+
 import csv
 import tempfile
 import unittest
-from pathlib import Path
 
-from run_csv_logger import COLUMNS, DOUBLE_COLUMNS, RunCsvLogger
+from Global.run_csv_logger import COLUMNS, DOUBLE_COLUMNS, RunCsvLogger
 
 
 class RunCsvLoggerTests(unittest.TestCase):

@@ -1,14 +1,22 @@
 """Exercise actual single-controller reader and cleanup functions without hardware."""
+
+# Resolve shared modules from this file, including when launched in Thonny.
+import sys
+from pathlib import Path
+
+CODE_DIRECTORY = Path(__file__).resolve().parents[1]
+if str(CODE_DIRECTORY) not in sys.path:
+    sys.path.insert(0, str(CODE_DIRECTORY))
+
 import ast
 from datetime import datetime
-from pathlib import Path
 import struct
 import time
 import unittest
 from unittest.mock import Mock
 
-from angle_protocol import AnglePacketReader, packet_csv_values, TELEMETRY_COLUMNS
-from angle_packet_fallback import MissingAnglePacketError
+from Global.angle_protocol import AnglePacketReader, packet_csv_values, TELEMETRY_COLUMNS
+from Global.angle_packet_fallback import MissingAnglePacketError
 from test_angle_protocol import Port, frame
 
 
@@ -22,9 +30,9 @@ class ControllerAngleProtocolTests(unittest.TestCase):
                    current_stage='test', cycle_count=1, latest_position_steps=0,
                    last_motor_command=0, MissingAnglePacketError=MissingAnglePacketError,
                    log=Mock())
-        from angle_protocol import AngleProtocolError
+        from Global.angle_protocol import AngleProtocolError
         env['AngleProtocolError'] = AngleProtocolError
-        tree = ast.parse(Path(__file__).with_name('PythonMaster_autocalibrate.py').read_text())
+        tree = ast.parse(Path(__file__).with_name('PythonMaster_auto.py').read_text())
         functions = [node for node in tree.body if isinstance(node, ast.FunctionDef)
                      and node.name in ('read_raw_angle1', 'stop_and_close')]
         exec(compile(ast.Module(body=functions, type_ignores=[]), 'single-reader', 'exec'), env)

@@ -1,10 +1,10 @@
 # Balancing run CSV and visualizer
 
-In this repository, the controllers and their helpers live in `Code/SinglePendulum/` and `Code/DoublePendulum/`. The visualizer and synthetic examples live beside this guide in `Code/RunReview/`.
+In this repository, the controllers live in `Code/SinglePendulum/` and `Code/DoublePendulum/`; shared configuration and helpers live in `Code/Global/`. The visualizer and synthetic examples live beside this guide in `Code/RunReview/`.
 
 ## Record a run
 
-Both `PythonMaster_autocalibrate.py` (single pendulum) and
+Both `PythonMaster_auto.py` (single pendulum) and
 `PythonMaster2_auto.py` (double pendulum) have these settings near the top:
 
 - `SAVE_RUN_CSV = True` records the run. Set it to `False` to disable CSV logging.
@@ -17,7 +17,7 @@ The loop only makes an in-memory snapshot and queues it without waiting. A separ
 
 ## Adjust the single-pendulum offset while balancing
 
-Run `PythonMaster_autocalibrate.py` in a focused interactive terminal (a Pi terminal or SSH works). After the upright check, **Up/Right** increases the manual upright offset and **Down/Left** decreases it, with no Enter required. Each arrow press changes it by **0.05°**; holding an arrow repeats at the terminal's key-repeat rate. Change `LIVE_OFFSET_STEP_DEG` near the top of the script to choose another increment.
+Run `PythonMaster_auto.py` in a focused interactive terminal (a Pi terminal or SSH works). After the upright check, **Up/Right** increases the manual upright offset and **Down/Left** decreases it, with no Enter required. Each arrow press changes it by **0.05°**; holding an arrow repeats at the terminal's key-repeat rate. Change `LIVE_OFFSET_STEP_DEG` near the top of the script to choose another increment.
 
 Positive offsets reduce the reported pendulum angle. Adjustments start from `UPRIGHT_OFFSET_DEG`, apply on the next control cycle, and last only for the current run. The regular status line shows `offset=...deg` when balancing output is enabled. The CSV records each change as a `manual_offset` event and includes the updated upright correction on each sample, even with terminal logs hidden. Ctrl+C still stops the run, and terminal input settings are restored on exit. Without an interactive terminal, balancing continues with the configured offset and arrow control is unavailable.
 
@@ -49,3 +49,8 @@ CSV schema version 2 records each channel's status (`valid`,
 plus receiver sequence/uptime and serial parsing counters. The `message` field
 records transport failures and the reason for prediction fallback. Both older
 and newer CSV files can be opened in the visualizer.
+
+
+Shared Python configuration and utilities now live in `Code/Global/`.
+Deploy the entire `Global` folder as a sibling of `SinglePendulum` and
+`DoublePendulum`; see [shared directory guide](../Global/README.md).

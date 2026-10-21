@@ -1,14 +1,22 @@
 """Exercise swing-up protocol integration without opening ports or commanding hardware."""
-import ast
+
+# Resolve shared modules from this file, including when launched in Thonny.
+import sys
 from pathlib import Path
+
+CODE_DIRECTORY = Path(__file__).resolve().parents[1]
+if str(CODE_DIRECTORY) not in sys.path:
+    sys.path.insert(0, str(CODE_DIRECTORY))
+
+import ast
 import unittest
 from unittest.mock import Mock
 
 import numpy as np
 import test_controller_angle_protocol as base_tests
-from angle_packet_fallback import estimate_with_angle, MissingAnglePacketError
-from angle_protocol import decode_frame, packet_csv_values
-from run_csv_logger import COLUMNS
+from Global.angle_packet_fallback import estimate_with_angle, MissingAnglePacketError
+from Global.angle_protocol import decode_frame, packet_csv_values
+from Global.run_csv_logger import COLUMNS
 from test_angle_protocol import frame
 
 

@@ -1,3 +1,16 @@
+# Resolve shared modules from this file, including when launched in Thonny.
+import sys
+from pathlib import Path
+
+CODE_DIRECTORY = Path(__file__).resolve().parents[1]
+if str(CODE_DIRECTORY) not in sys.path:
+    sys.path.insert(0, str(CODE_DIRECTORY))
+
+from Global.physical_parameters import (
+    DOUBLE_ARM_1, DOUBLE_ARM_2, DOUBLE_CART_MASS_KG, DOUBLE_CART_DRAG,
+    DOUBLE_PIVOT_DRAG, GRAVITY_M_S2, SAMPLE_PERIOD_S,
+)
+
 import numpy as np
 import sympy as sp
 import control as ctrl
@@ -18,28 +31,25 @@ I,I2,F,T_drag = sp.symbols('I I2 F T_drag', real = True)
 print("symbols defined")
 
 #Sample Period
-Ts = 1/100
+Ts = SAMPLE_PERIOD_S
 
 ArrayPrec = 5 #how many decimals are sent to the Text file
 
 #0.5N rolling friction
 
-#actual system values
-#pendulum 1
-length = 0.2 #total length of first pendulum
-lval = 0.087 #in meters (to center of mass of first pendulum)
-Ival = 0.00123324992  #rotational inertia
-m1val = 0.207 #in kg
-#pendulum 2
-length2 = 0.25 #total length
-mtotal2 = 0.210#0.206 #pendulum mass
-lval2 = 0.106 #length to center of mass
-Ival2 = 0.00197563667 #rotational inertia
-#cart
-mcartVal = 0.969 - 0.059 #mass of cart in kg
-B_cart_dragVal = 0.0 #cart drag coefficient
-gval = 9.81 #gravitational constant
-T_dragVal = 0.0 #rotational drag force, NOT MODELED CORRECTLY, LEAVE AS 0
+# Physical measurements are maintained in Code/Global/physical_parameters.py.
+length = DOUBLE_ARM_1.length_m
+lval = DOUBLE_ARM_1.center_of_mass_m
+Ival = DOUBLE_ARM_1.inertia_kg_m2
+m1val = DOUBLE_ARM_1.mass_kg
+length2 = DOUBLE_ARM_2.length_m
+mtotal2 = DOUBLE_ARM_2.mass_kg
+lval2 = DOUBLE_ARM_2.center_of_mass_m
+Ival2 = DOUBLE_ARM_2.inertia_kg_m2
+mcartVal = DOUBLE_CART_MASS_KG
+B_cart_dragVal = DOUBLE_CART_DRAG
+gval = GRAVITY_M_S2
+T_dragVal = DOUBLE_PIVOT_DRAG
 
 #substitutions
 vals = {m1:m1val,m2:mtotal2,mcart:mcartVal,l:lval,lFull:length,l2:lval2,g:gval,I:Ival,I2:Ival2,T_drag:T_dragVal,B_cart_drag:B_cart_dragVal}

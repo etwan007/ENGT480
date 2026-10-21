@@ -6,7 +6,7 @@ import sys
 import threading
 import time
 
-from angle_protocol import TELEMETRY_COLUMNS
+from .angle_protocol import TELEMETRY_COLUMNS
 
 
 COLUMNS = (

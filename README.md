@@ -31,7 +31,7 @@ FROM LAST YEAR <
         - Use the single pendulum script first to tune the first pendulum angle
         - Run the communication test program, and let the pendulums hang. Record the second pendulum angle to use for the 'correction2' variable value.
         - The control script should be ready to run at this point.
-        - To adjust tuning, or physical measurements of the pendulum parts, update the values in the math script, and run it. this will update the control_matrices.txt file.
+        - To adjust tuning, or physical measurements of the pendulum parts, update the physical measurements in `Code/Global/physical_parameters.py` (or tuning in the math script), and run `PythonMasterMath2.py`. this will update the control_matrices2.txt file.
         - To adjust the abstract dynamics, make sure to delete the .pkl file, and then run the math script to generate a file for the new dynamics. This will take a long time to run (only when re-generating the .pkl file), so run this on a personal computer. it will take from 15-30 minutes to calculate.
         - The pendulum will likely not stabilize on the first test, so methodically mess with the 'correction2' value until the pendulum is able to stay upright (Increasing the value brings it left, decreasing brings it right)
         - If the pendulum is slowly drifting off, use a finger to lightly touch the 2nd pendulum prevent it from going off the rail while it tunes. It should slowly correct 'correction' until the pendulum begins to center itself. It will oscillate at first, but should stabilize eventually in the center.
@@ -84,17 +84,18 @@ If you have a question about the system that we forgot to address:
 
 ## Current calibrated controllers and run review
 
-- Single pendulum: `Code/SinglePendulum/PythonMaster_autocalibrate.py`.
+- Single pendulum: `Code/SinglePendulum/PythonMaster_auto.py`.
 - Double pendulum: run `Code/DoublePendulum/PythonMaster2_auto.py` (the main controller) or `PythonMasterControl2.py` (a compatibility launcher); both start the same calibrated controller with receiver protocol v1. Its existing `control_matrices2.txt` supplies the model and gains. See [double-pendulum setup](Code/DoublePendulum/README.md).
 - Both controllers have `SHOW_BALANCING_LOGS` and `SAVE_RUN_CSV` switches near the top. Set either to `False` to disable routine balancing output or CSV recording. Sensor errors and faults remain visible.
 - The single controller supports live arrow-key offset adjustments; both controllers handle one unusable angle cycle with an estimator prediction and stop on repeated misses by default.
-- Keep each controller with its neighboring helper files when copying it to the Pi.
+- Copy `Code/Global/` alongside the controller folders when deploying to the Pi; shared helpers are imported from that package.
 - Open `Code/RunReview/balancing_visualizer.html` locally to replay a single- or double-pendulum CSV. Its example CSVs contain synthetic data.
 - See [logging, offsets, and replay instructions](Code/RunReview/RUN_LOGGING_AND_VISUALIZER.md).
 
 Hardware-free checks (Python with NumPy installed; Node.js for the visualizer):
 
 ```sh
+python3 -m unittest discover -s Code/Global/Tests -p 'test_*.py'
 (cd Code/SinglePendulum && python3 -m unittest discover -p 'test_*.py')
 (cd Code/DoublePendulum && python3 -m unittest discover -s Tests -t . -p 'test_*.py')
 (cd Code/RunReview && node test_balancing_visualizer.js)
@@ -105,3 +106,8 @@ Update the ESP32 receiver and Python readers together; TX1/TX2 keep their
 existing radio format. See [receiver deployment and diagnostics](Code/Wireless/ANGLE_PROTOCOL.md).
 Older controllers and `CommunicationTest.py` still use the legacy serial format
 and must not be run with the updated receiver. The Arduino motor protocol is unchanged.
+
+
+Shared Python configuration and utilities now live in `Code/Global/`.
+Deploy the entire `Global` folder as a sibling of `SinglePendulum` and
+`DoublePendulum`; see [shared directory guide](Code/Global/README.md).
