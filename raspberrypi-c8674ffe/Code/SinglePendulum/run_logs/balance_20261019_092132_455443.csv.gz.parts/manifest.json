@@ -1,0 +1,17 @@
+{
+  "filename": "balance_20261019_092132_455443.csv",
+  "encoding": "gzip",
+  "archive_sha256": "1a094a3ec866195b253be44fe0617ed28014464baa71826df81f1c4a6d78400c",
+  "parts": [
+    {
+      "name": "part-000000",
+      "sha256": "4d7aee19fcda72e888a323cc0db721e2d099db72562e9a70dc35b4fdd84475e5",
+      "bytes": 33554432
+    },
+    {
+      "name": "part-000001",
+      "sha256": "16445edd5734c3b925ec902b850f73f59d57ca98fe5fb677b4eb7d27b2fa9072",
+      "bytes": 5527316
+    }
+  ]
+}
