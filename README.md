@@ -1,4 +1,4 @@
-# ENGT481
+# ENGT480
 
 Repository for ENGT 480/481 Senior Design Capstone (Triple Inverted Pendulum project) Continued from    Capstone group 2025-2026. Credit for first round of commit files go to:
     - Samuel Whitesell: whitesell.samuel@gmail.com
@@ -6,6 +6,43 @@ Repository for ENGT 480/481 Senior Design Capstone (Triple Inverted Pendulum pro
     - Patrick Clark: Patrickgclark09@gmail.com
     - Edward Morris: emmorris853@gmail.com
     - Cooper Dlugos: Coopersd036@gmail.com
+
+## ENGT480 workflow — simple team guide
+
+The Pi will have two separate folders:
+
+```text
+Project folder on the Pi/
+├── ENGT480/                    ← Main version
+└── Experiments/
+    ├── Ethan-wirelessTX/        ← Ethan’s experiment
+    └── teammate-swingup/        ← Another experiment
+```
+
+- **ENGT480** follows the GitHub `main` branch. This is the approved version we normally run.
+- **Experiments** holds separate copies of the repo for work in progress.
+- Each experiment follows its own GitHub branch and includes the whole repo, including `Code/Global`.
+- Changing an experiment does not change the main version or anyone else’s experiment.
+
+### How to work on something
+
+1. **Create a branch** with a descriptive name, such as `Ethan-wirelessTX`.
+2. **Edit the normal files on that branch.** You do not need to create an `Experiments` folder inside the repo.
+3. **Commit and push your branch to GitHub.** Once automation is configured, the Pi will create the corresponding experiment folder.
+4. **Test from your experiment folder on the Pi.** Later pushes will update that folder between runs.
+5. **Commit and push any changes made directly on the Pi**, so they are available on your computer too.
+6. **When ready, open a pull request into `main`.** Review and merge the changes.
+7. **The Pi’s ENGT480 folder updates between runs**, bringing in the merged changes.
+
+### Team rules
+
+- One person edits a given experiment checkout at a time.
+- Only one person operates the physical rig at a time.
+- Automatic updates pause if that checkout has local edits or an active controller.
+- Downloading an experiment never starts it automatically.
+- Before switching computers, commit and push your work. On the other computer, pull the latest changes before editing.
+
+For AI assistants and implementation details, see the [repository and Pi workflow reference](GeneralDocumentation/REPOSITORY_AND_PI_WORKFLOW.md).
 
 FROM LAST YEAR <
 
