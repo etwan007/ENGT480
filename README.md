@@ -12,7 +12,7 @@ Repository for ENGT 480/481 Senior Design Capstone (Triple Inverted Pendulum pro
 The Pi will have two separate folders:
 
 ```text
-Project folder on the Pi/
+Pi Desktop/
 ├── ENGT480/                    ← Main version
 └── Experiments/
     ├── Ethan-wirelessTX/        ← Ethan’s experiment
@@ -26,9 +26,9 @@ Project folder on the Pi/
 
 ### How to work on something
 
-1. **Create a branch** with a descriptive name, such as `Ethan-wirelessTX`.
+1. **Create a branch** with a descriptive name ending in `_EXP` or starting with `experiment/`, such as `Ethan_wirelessTX_EXP`. The example name `Ethan-wirelessTX` is also allowlisted.
 2. **Edit the normal files on that branch.** You do not need to create an `Experiments` folder inside the repo.
-3. **Commit and push your branch to GitHub.** Once automation is configured, the Pi will create the corresponding experiment folder.
+3. **Commit and push your branch to GitHub.** The Pi creates the corresponding experiment folder during the next eligible update.
 4. **Test from your experiment folder on the Pi.** Later pushes will update that folder between runs.
 5. **Commit and push any changes made directly on the Pi**, so they are available on your computer too.
 6. **When ready, open a pull request into `main`.** Review and merge the changes.
@@ -38,11 +38,13 @@ Project folder on the Pi/
 
 - One person edits a given experiment checkout at a time.
 - Only one person operates the physical rig at a time.
-- Automatic updates pause if that checkout has local edits or an active controller.
+- Use the **ENGT480 Run** Desktop shortcut for hardware runs. It holds the shared rig and update locks.
+- Use **ENGT480 Pause Updates** before editing on the Pi or using Thonny directly; save your work and close stale editor buffers before resuming. Updates also defer while Thonny is open.
+- Automatic updates wait if that checkout has local edits or a managed controller is active.
 - Downloading an experiment never starts it automatically.
 - Before switching computers, commit and push your work. On the other computer, pull the latest changes before editing.
 
-For AI assistants and implementation details, see the [repository and Pi workflow reference](GeneralDocumentation/REPOSITORY_AND_PI_WORKFLOW.md).
+See the [installed Desktop setup](GeneralDocumentation/PI_AUTOMATION_SETUP.md) for shortcuts and verified backup coverage. For AI assistants and implementation details, see the [repository and Pi workflow reference](GeneralDocumentation/REPOSITORY_AND_PI_WORKFLOW.md) and [automation operating guide](Tools/PiAutomation/README.md).
 
 FROM LAST YEAR <
 

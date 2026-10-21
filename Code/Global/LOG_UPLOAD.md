@@ -125,3 +125,26 @@ selects a different destination. The run visualizer opens the restored CSV.
 GitHub blocks ordinary Git blobs over 100 MiB; compression/parts keep every
 uploaded object below that limit without requiring Git LFS or changing source
 CSV recording. See [GitHub large-file limits](https://docs.github.com/en/repositories/working-with-files/managing-large-files/about-large-files-on-github).
+
+
+## Multiple Desktop checkouts
+
+The ENGT480 code-sync installation extends the same uploader with an atomic
+checkout registry. Its original `repo`, cache, device ID, SSH key, and confirmation
+state are preserved. It scans the original checkout plus every registered
+Desktop main/experiment checkout, including retained folders after branch deletion.
+
+Existing backups keep `<device>/Code/...`; Desktop main uses
+`<device>/checkouts/main/Code/...` and experiments use
+`<device>/checkouts/<checkout-id>/Code/...`. Files with the same relative name
+in different checkouts cannot overwrite each other. The original state-file
+schema remains valid because new confirmation keys include their namespace.
+One service and cache serialize pushes for all sources; source selection rotates
+so a legacy backlog does not indefinitely block experiments. Active writers are
+deferred per source, and original CSVs stay in their own checkout run folders.
+
+The configured registry is `~/.local/state/engt480-code-sync/registry.json`.
+Re-running `install_log_upload.py` preserves the registry and legacy source root.
+Register new roots through code sync instead of changing the legacy `--repo`.
+See the [Desktop setup](../../GeneralDocumentation/PI_AUTOMATION_SETUP.md) and
+[automation operating guide](../../Tools/PiAutomation/README.md).

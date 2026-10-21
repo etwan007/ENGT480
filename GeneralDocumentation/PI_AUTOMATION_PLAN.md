@@ -1,6 +1,8 @@
 # ENGT480 Pi automation implementation plan
 
-Status: local design and implementation checklist only. No Pi connection, installation, directory changes, service changes, or hardware commands were performed for this plan. The automation described here does not exist yet.
+Status: implementation is now available in [Tools/PiAutomation](../Tools/PiAutomation/README.md). See the [installed Desktop setup](PI_AUTOMATION_SETUP.md) for actual deployment and verification. The sections below preserve the original design checklist; finalized filenames, operating commands, and behavior are documented in those implementation references.
+
+The implementation consolidates synchronization, status, pause/resume, and controller launching in `pi_sync.py`, uses the Pi Desktop as its workspace, and preserves the legacy `uploaded.json` confirmation schema by prefixing new source keys with stable backup namespaces. It does not require the proposed per-source state migration.
 
 This extends the [repository and Pi workflow reference](REPOSITORY_AND_PI_WORKFLOW.md).
 
@@ -198,7 +200,7 @@ Use temporary local Git remotes and simulated controller processes; do not acces
 
 ## 9. Later installation sequence
 
-These are future steps only. The user's current instruction explicitly excludes Pi work.
+This was the original rollout sequence. The user subsequently authorized implementation on the Pi Desktop; see the installed setup record for completed steps.
 
 1. Finish the local tools and hardware-free tests. Review the enrollment rules and launch workflow with the team.
 2. During a later authorized maintenance session, inspect the Pi's checkout state, source remote, logs, disk space, Python environment, and service capabilities.
