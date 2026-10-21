@@ -21,7 +21,7 @@ class LogUploadTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
-        self.root = Path(self.temp.name)
+        self.root = Path(self.temp.name).resolve()
         self.repo = self.root / 'controller checkout with spaces'
         self.repo.mkdir()
         self.remote = self.root / 'remote.git'
@@ -200,6 +200,81 @@ class LogUploadTests(unittest.TestCase):
             upload.run_git([sys.executable, '-c', parent], env=dict(os.environ), timeout=0.15)
         time.sleep(1.1)
         self.assertFalse(marker.exists())
+
+
+    def register_sources(self, others):
+        import json
+        registry = self.root / 'registry.json'
+        records = {}
+        for identifier, root in others:
+            records[identifier] = {'id': identifier, 'path': str(root),
+                                   'namespace': 'checkouts/' + identifier, 'active': True}
+        registry.write_text(json.dumps({'checkouts': records}))
+        self.uploader.source_registry = registry
+        return registry
+
+    def other_log(self, identifier, data):
+        root = self.root / identifier
+        path = root / 'Code/SinglePendulum/run_logs/balance.csv'
+        path.parent.mkdir(parents=True)
+        path.write_bytes(data)
+        os.utime(path, (time.time() - 180, time.time() - 180))
+        return root, path
+
+    def test_multiple_roots_equal_names_preserve_legacy_history_state_and_source_files(self):
+        import json
+        legacy = self.log(data=b'legacy bytes')
+        self.uploader.sync()
+        before = json.loads((self.uploader.cache / 'uploaded.json').read_text())
+        main, main_log = self.other_log('main', b'main bytes')
+        experiment, exp_log = self.other_log('Ethan_EXP', b'experiment bytes')
+        self.register_sources([('main', main), ('Ethan_EXP', experiment)])
+        self.assertEqual(self.uploader.sync(), 2)
+        for name, data in [('Code/SinglePendulum/run_logs/balance.csv', legacy.read_bytes()),
+                           ('checkouts/main/Code/SinglePendulum/run_logs/balance.csv', main_log.read_bytes()),
+                           ('checkouts/Ethan_EXP/Code/SinglePendulum/run_logs/balance.csv', exp_log.read_bytes())]:
+            self.assertEqual(self.git('--git-dir', str(self.remote), 'show', 'logs:test-pi/' + name), data)
+        after = json.loads((self.uploader.cache / 'uploaded.json').read_text())
+        self.assertEqual(before['destination'], after['destination'])
+        for name, signature in before['files'].items():
+            self.assertEqual(signature, after['files'][name])
+        self.assertEqual(self.uploader.sync(), 0)
+
+    def test_active_source_does_not_block_other_sources(self):
+        self.log()
+        experiment, _ = self.other_log('Ethan_EXP', b'exp bytes')
+        self.register_sources([('Ethan_EXP', experiment)])
+        with patch.object(upload, 'logs_open_for_writing', side_effect=lambda root: root == experiment):
+            self.assertEqual(self.uploader.sync(), 1)
+        self.assertEqual(self.files(), ['test-pi/Code/SinglePendulum/run_logs/balance.csv'])
+        self.assertEqual(self.uploader.sync(), 1)
+
+    def test_deleted_remote_branch_still_backs_up_retained_source(self):
+        import json
+        experiment, _ = self.other_log('Ethan_EXP', b'retained bytes')
+        registry = self.register_sources([('Ethan_EXP', experiment)])
+        data = json.loads(registry.read_text())
+        data['checkouts']['Ethan_EXP']['active'] = False
+        registry.write_text(json.dumps(data))
+        self.assertEqual(self.uploader.sync(), 1)
+        self.assertIn('test-pi/checkouts/Ethan_EXP/Code/SinglePendulum/run_logs/balance.csv', self.files())
+
+    def test_duplicate_root_and_namespace_rejected_before_push(self):
+        self.log()
+        self.uploader.extra_sources = [{'id': 'again', 'root': str(self.repo), 'namespace': 'checkouts/again'}]
+        with self.assertRaisesRegex(ValueError, 'Duplicate'):
+            self.uploader.sync()
+        self.assertFalse((self.uploader.cache / 'uploaded.json').exists())
+
+    def test_round_robin_prevents_large_legacy_backlog_starving_experiments(self):
+        for i in range(4):
+            self.log(f'SinglePendulum/run_logs/{i}.csv', b'1234567890')
+        experiment, _ = self.other_log('Ethan_EXP', b'experiment')
+        self.register_sources([('Ethan_EXP', experiment)])
+        with patch.object(upload, 'BATCH_BYTES', 1):
+            self.uploader.sync()
+            self.uploader.sync()
+        self.assertTrue(any('/checkouts/Ethan_EXP/' in name for name in self.files()))
 
 
 @unittest.skipUnless(Path('/proc').is_dir(), 'Linux process inspection')

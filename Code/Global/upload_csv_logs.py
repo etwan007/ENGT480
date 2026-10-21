@@ -4,6 +4,7 @@ Uses only the Python standard library and Git. Run using the installed user time
 The source checkout, its index, and original CSV files are never modified.
 """
 import argparse
+from collections import deque
 import fcntl
 import gzip
 import hashlib
@@ -82,8 +83,12 @@ def logs_open_for_writing(repo):
 
 
 class LogUploader:
-    def __init__(self, repo, cache, remote, device, idle_seconds=120, ssh_key=None):
+    def __init__(self, repo, cache, remote, device, idle_seconds=120, ssh_key=None,
+                 sources=None, source_registry=None):
         self.repo = Path(repo).resolve()
+        self.extra_sources = sources or []
+        self.source_registry = Path(source_registry) if source_registry else None
+        self.snapshot_sources = {}
         self.cache = Path(cache).resolve()
         self.remote = remote
         if not re.fullmatch(r'[A-Za-z0-9_-]+', device):
@@ -144,33 +149,91 @@ class LogUploader:
             blobs[folder + 'manifest.json'] = (blob, len(manifest))
             return blobs
 
-    def collect(self, uploaded):
+    def sources(self):
+        """Keep the legacy root/namespace; add registered checkouts without moving logs."""
+        result = [{'id': 'legacy', 'root': str(self.repo), 'namespace': ''}]
+        result.extend(self.extra_sources)
+        if self.source_registry:
+            if not self.source_registry.is_file():
+                raise RuntimeError('Configured checkout registry is missing; source list is incomplete')
+            registry = json.loads(self.source_registry.read_text())
+            result.extend({'id': record['id'], 'root': record['path'],
+                           'namespace': record['namespace']}
+                          for record in registry['checkouts'].values())
+        roots, names, identifiers = set(), set(), set()
+        checked = []
+        for record in result:
+            root = Path(record['root'])
+            namespace = record['namespace']
+            identifier = record['id']
+            if not re.fullmatch(r'[A-Za-z0-9_-]+', identifier):
+                raise ValueError('Invalid backup source ID')
+            if namespace and (namespace.startswith('/') or '..' in namespace.split('/') or
+                              any(not re.fullmatch(r'[A-Za-z0-9_-]+', p) for p in namespace.split('/'))):
+                raise ValueError('Invalid backup namespace')
+            if not root.is_absolute() or root.is_symlink() or root.resolve() != root:
+                raise ValueError('Backup sources must use canonical absolute paths')
+            if root in roots or namespace in names or identifier in identifiers:
+                raise ValueError('Duplicate backup source root, namespace, or ID')
+            if any(namespace and name and (namespace.startswith(name + '/') or name.startswith(namespace + '/'))
+                   for name in names):
+                raise ValueError('Overlapping backup namespaces')
+            roots.add(root); names.add(namespace); identifiers.add(identifier)
+            if not (root / 'Code').is_dir():
+                print(f'Backup source missing: {identifier}: {root}; retained in configuration.', flush=True)
+                continue
+            checked.append(dict(record, root=root))
+        return checked
+
+    def collect(self, uploaded, sources=None):
         snapshots = {}
+        self.snapshot_sources = {}
         batch_size = 0
-        paths = sorted((p for p in (self.repo / 'Code').glob('*/run_logs/**/*.csv')
-                        if p.is_file() and not p.is_symlink()),
-                       key=lambda p: (p.stat().st_size <= MAX_BLOB_BYTES, str(p)))
-        for path in paths:
-            if path.is_symlink() or not path.is_file():
+        queues = []
+        for source in self.sources() if sources is None else sources:
+            root = source['root']
+            if logs_open_for_writing(root):
+                print(f'Run logs open for writing in {source["id"]}; deferring that source.', flush=True)
                 continue
-            try:
-                path.resolve().relative_to(self.repo / 'Code')
-            except ValueError:
-                continue
-            name = path.relative_to(self.repo).as_posix()
-            before = signature(path)
-            if uploaded.get(name) == before:
-                continue
-            # Waiting for closed files to settle also captures interrupted runs
-            # and multi-file system-identification CSVs without a stop footer.
-            if time.time() - path.stat().st_mtime < self.idle_seconds:
-                continue
-            blobs = self.backup_blobs(path, name)
-            if signature(path) == before:
-                snapshots[name] = (before, blobs)
-                batch_size += sum(size for _, size in blobs.values())
-                if batch_size >= BATCH_BYTES or len(snapshots) >= 50:
-                    break
+            paths = sorted((p for p in (root / 'Code').glob('*/run_logs/**/*.csv')
+                            if p.is_file() and not p.is_symlink()),
+                           key=lambda p: (p.stat().st_size <= MAX_BLOB_BYTES, str(p)))
+            queues.append((source, deque(paths)))
+        # Rotate the starting source each pass, including when one large file fills a batch.
+        cursor_file = self.cache / 'source-cursor.json'
+        cursor = json.loads(cursor_file.read_text()) if cursor_file.exists() else 0
+        if queues:
+            start = cursor % len(queues)
+            queues = queues[start:] + queues[:start]
+            pending = cursor_file.with_suffix('.tmp')
+            pending.write_text(json.dumps(cursor + 1))
+            pending.replace(cursor_file)
+        while any(paths for _, paths in queues):
+            for source, paths in queues:
+                if not paths:
+                    continue
+                path = paths.popleft()
+                root = source['root']
+                if path.is_symlink() or not path.is_file():
+                    continue
+                try:
+                    path.resolve().relative_to(root / 'Code')
+                except ValueError:
+                    continue
+                relative = path.relative_to(root).as_posix()
+                name = source['namespace'] + '/' + relative if source['namespace'] else relative
+                before = signature(path)
+                if uploaded.get(name) == before:
+                    continue
+                if time.time() - path.stat().st_mtime < self.idle_seconds:
+                    continue
+                blobs = self.backup_blobs(path, name)
+                if signature(path) == before:
+                    snapshots[name] = (before, blobs)
+                    self.snapshot_sources[name] = root
+                    batch_size += sum(size for _, size in blobs.values())
+                    if batch_size >= BATCH_BYTES or len(snapshots) >= 50:
+                        return snapshots
         return snapshots
 
     def push(self, entries):
@@ -214,9 +277,6 @@ class LogUploader:
                 fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
             except BlockingIOError:
                 return 0
-            if logs_open_for_writing(self.repo):
-                print('Run logs are open for writing; deferring upload.', flush=True)
-                return 0
             if not self.git_dir.exists():
                 subprocess.run(['git', 'init', '--bare', str(self.git_dir)],
                                env=self.environment, check=True, capture_output=True)
@@ -229,7 +289,11 @@ class LogUploader:
             snapshots = self.collect(uploaded)
             if not snapshots:
                 return 0
-            if logs_open_for_writing(self.repo):
+            # Recheck each selected source immediately before preparing pushes.
+            active = {root for root in set(self.snapshot_sources.values()) if logs_open_for_writing(root)}
+            snapshots = {name: value for name, value in snapshots.items()
+                         if self.snapshot_sources[name] not in active}
+            if not snapshots:
                 return 0
             # The temporary index belongs only to the cache, never the source repo.
             with tempfile.TemporaryDirectory(dir=self.cache) as temp:

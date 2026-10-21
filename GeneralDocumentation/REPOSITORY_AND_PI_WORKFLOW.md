@@ -6,6 +6,8 @@ The team will use one GitHub repository with a main Pi checkout and separate exp
 
 **This document describes the intended setup. Branch discovery and automatic Pi updates have not yet been implemented.** ENGT480 is the intended project and main checkout name; do not assume existing directories have already been renamed.
 
+For the proposed tools, update algorithm, run locks, installation requirements, and local acceptance checks, see the [Pi automation implementation plan](PI_AUTOMATION_PLAN.md).
+
 ## Directory layout
 
 `<PI_WORKSPACE>` represents the parent directory chosen during setup. It is not a literal path.
