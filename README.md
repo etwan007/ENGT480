@@ -48,12 +48,13 @@ To keep this shortcut in future terminal sessions, open `nano ~/.bashrc`, add th
 source ~/.bashrc
 ```
 
-This alias is a terminal convenience; adding these instructions to the repository does not install the alias on anyone's Pi account automatically.
+This alias is a terminal convenience. It is installed for the shared Pi account; adding these instructions to the repository does not install it automatically on other accounts.
 
 | Command | What it does |
 | --- | --- |
 | `engt run` | Asks which checkout and script to run. Uses the configured PythonLibraries environment and holds the rig/update locks until the script stops. No separate environment activation is needed. |
 | `engt run Ethan_EXP Code/SinglePendulum/PythonMaster_auto.py` | Starts that specific script in Ethan_EXP with the same environment and run protection. |
+| `engt publish "Describe your changes"` | From inside an experiment checkout, previews saved source changes and unpublished commits, asks for confirmation, commits, and pushes to that branch. Logs/caches stay local; pause settings are preserved. Main/logs publishing is refused. |
 | `engt status` | Shows registered folders, their branches, and the latest sync results or reported problems. |
 | `engt pause` | Pauses code updates for all checkouts. It waits for any current sync to finish; it does not stop controllers or CSV backups. |
 | `engt resume` | Clears the global pause so the timer can check again. Local edits, active runs, open Thonny sessions, and checkout-specific pauses can still defer updates. |
@@ -65,6 +66,16 @@ This alias is a terminal convenience; adding these instructions to the repositor
 Replace `Ethan_EXP` with the checkout ID shown by `engt status` when working in another experiment. Close Thonny before using `engt run`; the launcher refuses to start while Thonny is open or a recognized hardware serial port is already in use.
 
 For direct nano/Thonny editing or direct Python launches, pause updates first. Saved local edits make the updater leave the checkout alone, but unsaved editor buffers are invisible to Git, and a direct Python launch does not acquire the shared run lock. The protected `engt run` command handles run locking automatically. Commit and push Pi edits using your contributor Git identity/authentication before resuming updates, or leave unfinished work saved and the checkout pending. CSV backups continue while code updates are paused.
+
+To publish from another directory, specify the checkout:
+
+```sh
+engt publish "Tune transmitter timing" --checkout Ethan_EXP
+```
+
+Save your files before publishing. The command uses the checkout's effective Git author and the Pi's configured repository SSH key. It will stop if GitHub has newer/diverged history; it never automatically pulls, rebases, or force-pushes. A failed push leaves the commit saved locally, and rerunning the same command retries it without creating an empty duplicate commit. The background updater still only downloads code; source publishing happens only when you explicitly run this command.
+
+The `engt` alias is now saved in this Pi account's `~/.bashrc`. Open a new terminal or run `source ~/.bashrc` to load it in an existing session. Other accounts still need to add the alias themselves.
 
 ### Branch naming rules
 
