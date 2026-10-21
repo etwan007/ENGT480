@@ -90,10 +90,12 @@ Icon=utilities-terminal
 Categories=Development;
 ''')
         desktop.chmod(0o755)
+    upload_timer_active = False
     if args.integrate_logs:
         # The same service/cache/device/identity remain in use. Stop it before
         # replacing its standalone script and adding the atomic source registry.
-        subprocess.run(['systemctl', '--user', 'stop', 'engt481-log-upload.service'], check=True)
+        upload_timer_active = subprocess.run(['systemctl', '--user', 'is-active', '--quiet', 'engt481-log-upload.timer'], check=False).returncode == 0
+        subprocess.run(['systemctl', '--user', 'stop', 'engt481-log-upload.timer', 'engt481-log-upload.service'], check=True)
         upload_library = home / '.local/lib/engt481-log-upload'
         shutil.copy2(upload_config, backup / 'log-upload-config.json')
         for name in ('uploaded.json',):
@@ -110,6 +112,8 @@ Categories=Development;
         atomic_json(upload_config, legacy)
     subprocess.run(['systemctl', '--user', 'daemon-reload'], check=True)
     if args.integrate_logs:
+        if upload_timer_active:
+            subprocess.run(['systemctl', '--user', 'start', 'engt481-log-upload.timer'], check=True)
         subprocess.run(['systemctl', '--user', 'start', '--no-block', 'engt481-log-upload.service'], check=True)
     print('Installed; code timer is not enabled. Configuration:', config_path)
     print('Original log configuration/state/script backups:', backup)
