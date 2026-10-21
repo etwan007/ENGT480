@@ -276,7 +276,12 @@ class SyncTests(unittest.TestCase):
         demo.write_text('from pathlib import Path\nimport time\nPath(' + repr(str(marker)) + ').touch()\ntime.sleep(30)\n')
         config = self.root / 'config.json'
         config.write_text(json.dumps(self.config))
-        child = subprocess.Popen([sys.executable, str(MODULE), '--config', str(config), 'run', 'Ethan_EXP', 'Code/SinglePendulum/demo.py'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        # This fixture launches only a temporary harmless script. Isolate its
+        # idle check from real serial/Thonny activity while retaining real locks.
+        driver = ('import sys; sys.path.insert(0, ' + repr(str(MODULE.parent)) + '); '
+                  'import pi_sync; pi_sync.busy_reason = lambda: None; '
+                  'raise SystemExit(pi_sync.main())')
+        child = subprocess.Popen([sys.executable, '-c', driver, '--config', str(config), 'run', 'Ethan_EXP', 'Code/SinglePendulum/demo.py'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         try:
             deadline = time.monotonic() + 8
             while not marker.exists() and time.monotonic() < deadline and child.poll() is None:
