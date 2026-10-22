@@ -3,3 +3,6 @@ __pycache__/
 *.py[cod]
 Code/SinglePendulum/run_logs/
 Code/DoublePendulum/run_logs/
+
+# System file
+.DS_Store
