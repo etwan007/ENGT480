@@ -1,3 +1,5 @@
+> **Experimental Pi recovery:** The old Pi project, including unpublished controller variants and backups, is collected in [LegacyPi/](LegacyPi/README.md). See its guide and SHA-256 manifest.
+
 # ENGT480
 
 Repository for ENGT 480/481 Senior Design Capstone (Triple Inverted Pendulum project) Continued from    Capstone group 2025-2026. Credit for first round of commit files go to:

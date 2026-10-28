@@ -1,0 +1,517 @@
+{
+  "recovered_on": "2026-10-28",
+  "source_root": "/home/engt481/Desktop/GitHub Repository/ENGT481",
+  "source_head": "44ba126b9513f4e0e0be4041fb201dd7ce23100a",
+  "base_main": "f4b80360d48341f32da27821c55d05a24ce1b3a1",
+  "branch": "experiment/legacy-pi-recovery",
+  "file_count": 84,
+  "total_bytes": 1651787,
+  "excluded_generated_file_count": 379,
+  "python_syntax_errors": [],
+  "files": [
+    {
+      "source": "Code/ArduinoSlave/ArduinoSlave.ino",
+      "destination": "LegacyPi/Code/ArduinoSlave/ArduinoSlave.ino",
+      "bytes": 4193,
+      "sha256": "8fb7f2d6d36044916f1d359a08320ece7782d0afddc80857a0f8ad6dd2d3ba13"
+    },
+    {
+      "source": "Code/ArduinoSlave/StepCountCheck.py",
+      "destination": "LegacyPi/Code/ArduinoSlave/StepCountCheck.py",
+      "bytes": 3109,
+      "sha256": "681f7346a26ed1911256036723fdeb9692a7d85e1b9ddcd6849e95b17047e411"
+    },
+    {
+      "source": "Code/CommunicationTest.py",
+      "destination": "LegacyPi/Code/CommunicationTest.py",
+      "bytes": 3444,
+      "sha256": "3abeb50964e3a2951e4b8b051c3c956c774c65603cb164169f848ffc11e959ce"
+    },
+    {
+      "source": "Code/DoublePendulum/Archive/PythonMaster2_autotest.py",
+      "destination": "LegacyPi/Code/DoublePendulum/Archive/PythonMaster2_autotest.py",
+      "bytes": 19551,
+      "sha256": "d7d41e2bae436dcd467083d36b872098a7cdb9e47d1a371a75544ce611f9211a"
+    },
+    {
+      "source": "Code/DoublePendulum/Archive/PythonMasterControl2.py",
+      "destination": "LegacyPi/Code/DoublePendulum/Archive/PythonMasterControl2.py",
+      "bytes": 9200,
+      "sha256": "2c1f517964d8070c1a4079c59ce9654018ec45825d186eec9dfdfea451050c39"
+    },
+    {
+      "source": "Code/DoublePendulum/Archive/README.md",
+      "destination": "LegacyPi/Code/DoublePendulum/Archive/README.md",
+      "bytes": 1885,
+      "sha256": "216ef1cdbc04d160c07dd99bc3562b699e00b5b620d6fd1aac7d07f31fa04086"
+    },
+    {
+      "source": "Code/DoublePendulum/Archive/Test/PythonMasterControl2.py",
+      "destination": "LegacyPi/Code/DoublePendulum/Archive/Test/PythonMasterControl2.py",
+      "bytes": 9283,
+      "sha256": "70b4ef33008dced23a3cfb2b373593da97c6a6537ba2d91a5ea1062ccbb8973c"
+    },
+    {
+      "source": "Code/DoublePendulum/Archive/Test/PythonMasterMath2.py",
+      "destination": "LegacyPi/Code/DoublePendulum/Archive/Test/PythonMasterMath2.py",
+      "bytes": 7593,
+      "sha256": "9a0fafdfe96c59f8a9cf6e8d08683b763f312e7c536660a5bf5bfb9fb0f68cb2"
+    },
+    {
+      "source": "Code/DoublePendulum/Archive/Test/control_matrices2.txt",
+      "destination": "LegacyPi/Code/DoublePendulum/Archive/Test/control_matrices2.txt",
+      "bytes": 1171,
+      "sha256": "3b11d9ba0b09c095f4e65a44006a60cce8a6c7b08145b9b25a253e47ac47e116"
+    },
+    {
+      "source": "Code/DoublePendulum/Archive/Test/symbolic_model2.pkl",
+      "destination": "LegacyPi/Code/DoublePendulum/Archive/Test/symbolic_model2.pkl",
+      "bytes": 17675,
+      "sha256": "64c3bbe5e3aaf5486fa2460fb3cbb2063e3e67cf392e6e5ded0b3ba4b86b9fb3"
+    },
+    {
+      "source": "Code/DoublePendulum/PendulumSysID.py",
+      "destination": "LegacyPi/Code/DoublePendulum/PendulumSysID.py",
+      "bytes": 75973,
+      "sha256": "2789c2dd3d18cd623f0bdc24db6b708fa095592c4c8994d26552f86f9ca554ef"
+    },
+    {
+      "source": "Code/DoublePendulum/PythonMaster2_auto.py",
+      "destination": "LegacyPi/Code/DoublePendulum/PythonMaster2_auto.py",
+      "bytes": 22537,
+      "sha256": "5bd1d193bdbbbc80c444961111511dbe833e734ab772d49c4a198e53901771d3"
+    },
+    {
+      "source": "Code/DoublePendulum/PythonMaster2_swingup.py",
+      "destination": "LegacyPi/Code/DoublePendulum/PythonMaster2_swingup.py",
+      "bytes": 54534,
+      "sha256": "6cd550ad3703c25886ff634affa52e61ec83bfccbdc5412f951205dcaae37cb2"
+    },
+    {
+      "source": "Code/DoublePendulum/PythonMaster2_swingup.py.bak",
+      "destination": "LegacyPi/Code/DoublePendulum/PythonMaster2_swingup.py.bak",
+      "bytes": 54544,
+      "sha256": "0b83e36e4275cfa35a2aec60e73dc52f0bbd51ad33d29549176c997541bba633"
+    },
+    {
+      "source": "Code/DoublePendulum/PythonMaster2_swingup.py.bak_20261027_182719",
+      "destination": "LegacyPi/Code/DoublePendulum/PythonMaster2_swingup.py.bak_20261027_182719",
+      "bytes": 54542,
+      "sha256": "2d66dd382a0745cff8eae3ea02feb1db8f135b210af39cccbbd1eac56bffbb01"
+    },
+    {
+      "source": "Code/DoublePendulum/PythonMaster2_swingup.py.bak_20261027_184231",
+      "destination": "LegacyPi/Code/DoublePendulum/PythonMaster2_swingup.py.bak_20261027_184231",
+      "bytes": 54543,
+      "sha256": "5a43931eaa210e77bfcac3151fae76a9e14d7d3a896b5c31c4aea965a0d1b916"
+    },
+    {
+      "source": "Code/DoublePendulum/PythonMaster2_swingup_old_20261021_165257.py",
+      "destination": "LegacyPi/Code/DoublePendulum/PythonMaster2_swingup_old_20261021_165257.py",
+      "bytes": 51563,
+      "sha256": "a290d691e8bfaed7b06f8387d1386fa2d9875e42c25a874a9574bbf011460b2f"
+    },
+    {
+      "source": "Code/DoublePendulum/PythonMasterDouble-Claude.py",
+      "destination": "LegacyPi/Code/DoublePendulum/PythonMasterDouble-Claude.py",
+      "bytes": 38327,
+      "sha256": "42a72837a666a2da9eb426df820e859f70a33cd455cf0d32fbd0d96e4df46c69"
+    },
+    {
+      "source": "Code/DoublePendulum/PythonMasterDouble-Damping30.py",
+      "destination": "LegacyPi/Code/DoublePendulum/PythonMasterDouble-Damping30.py",
+      "bytes": 38237,
+      "sha256": "107a120fd44db917d09c99e800a5814c2a6a50054cf466f9675174c003ac571d"
+    },
+    {
+      "source": "Code/DoublePendulum/PythonMasterDouble-Damping45-Latency8.py",
+      "destination": "LegacyPi/Code/DoublePendulum/PythonMasterDouble-Damping45-Latency8.py",
+      "bytes": 38237,
+      "sha256": "31ec6e9b225a0a36478a22fbc9e03d1ef7cc8cb248baa449ceb1e70afecd46f5"
+    },
+    {
+      "source": "Code/DoublePendulum/PythonMasterDouble-Damping45-NoTrim.py",
+      "destination": "LegacyPi/Code/DoublePendulum/PythonMasterDouble-Damping45-NoTrim.py",
+      "bytes": 38238,
+      "sha256": "949b613ccbdf4257c8361b1526b53cb2d0e5ba60c8539fef2fe3051dc809cffc"
+    },
+    {
+      "source": "Code/DoublePendulum/PythonMasterDouble-Damping45.py",
+      "destination": "LegacyPi/Code/DoublePendulum/PythonMasterDouble-Damping45.py",
+      "bytes": 38237,
+      "sha256": "2c4b32e0660868bbdf229fc870c4972db4f100812c42437133fb986ea600046f"
+    },
+    {
+      "source": "Code/DoublePendulum/PythonMasterMath2.py",
+      "destination": "LegacyPi/Code/DoublePendulum/PythonMasterMath2.py",
+      "bytes": 7599,
+      "sha256": "da13dcce2ffac37bc011f264e39b586702d64beb7996d333e9b704fc1c35e2cf"
+    },
+    {
+      "source": "Code/DoublePendulum/analyze_sysid.py",
+      "destination": "LegacyPi/Code/DoublePendulum/analyze_sysid.py",
+      "bytes": 74181,
+      "sha256": "84d0d6994d982d07420fde86c42d71a1898904fb7355053cad9e4612ce0020de"
+    },
+    {
+      "source": "Code/DoublePendulum/angle_packet_fallback.py",
+      "destination": "LegacyPi/Code/DoublePendulum/angle_packet_fallback.py",
+      "bytes": 2292,
+      "sha256": "cdfb0a3932a517c672b9d65fd2f24b8577b9e78be14003bfa29e2e3f1ad65bf4"
+    },
+    {
+      "source": "Code/DoublePendulum/angle_protocol.py",
+      "destination": "LegacyPi/Code/DoublePendulum/angle_protocol.py",
+      "bytes": 7697,
+      "sha256": "f68d557552d631d96f0f14c30afe1dfad88c6a690fe8706307113b2d18ca4fa4"
+    },
+    {
+      "source": "Code/DoublePendulum/apply_sysid.py",
+      "destination": "LegacyPi/Code/DoublePendulum/apply_sysid.py",
+      "bytes": 2642,
+      "sha256": "923177f261c6613c705ca9228fc476dd164745e6d880b318fcc50bdcbe27fe0a"
+    },
+    {
+      "source": "Code/DoublePendulum/control_matrices2.txt",
+      "destination": "LegacyPi/Code/DoublePendulum/control_matrices2.txt",
+      "bytes": 1171,
+      "sha256": "5cd265495601b7fda049cd3a19746f6248c13e4d3ee1366e731fe5af0a8363fe"
+    },
+    {
+      "source": "Code/DoublePendulum/double_swingup_trajectory.json",
+      "destination": "LegacyPi/Code/DoublePendulum/double_swingup_trajectory.json",
+      "bytes": 38827,
+      "sha256": "ed149e4c65fe574ef4389fec369187b0922fe386fa90633a8c75c74aea23a64e"
+    },
+    {
+      "source": "Code/DoublePendulum/double_swingup_trajectory.json.bak_20261027_182719",
+      "destination": "LegacyPi/Code/DoublePendulum/double_swingup_trajectory.json.bak_20261027_182719",
+      "bytes": 39052,
+      "sha256": "a19a27f81d5d574a6189e42f55a262be8e80f49e599bc6a4db9afafe316cebe2"
+    },
+    {
+      "source": "Code/DoublePendulum/double_swingup_trajectory.json.bak_20261027_184231",
+      "destination": "LegacyPi/Code/DoublePendulum/double_swingup_trajectory.json.bak_20261027_184231",
+      "bytes": 38707,
+      "sha256": "df9f5b1fcf474c2f9ff3d497f32bd38ddcb695a99e7cde361376b90d7b4475ff"
+    },
+    {
+      "source": "Code/DoublePendulum/run_csv_logger.py",
+      "destination": "LegacyPi/Code/DoublePendulum/run_csv_logger.py",
+      "bytes": 4811,
+      "sha256": "29d2072a78fa257f45209d4728da173090437adb3e5cbaa4867c71cced2e1f58"
+    },
+    {
+      "source": "Code/DoublePendulum/symbolic_model2.pkl",
+      "destination": "LegacyPi/Code/DoublePendulum/symbolic_model2.pkl",
+      "bytes": 17675,
+      "sha256": "64c3bbe5e3aaf5486fa2460fb3cbb2063e3e67cf392e6e5ded0b3ba4b86b9fb3"
+    },
+    {
+      "source": "Code/Global/AngleSensorDiagnostic.py",
+      "destination": "LegacyPi/Code/Global/AngleSensorDiagnostic.py",
+      "bytes": 3513,
+      "sha256": "e0a1616fe740add74d98f2b710367149614d00ee88046f25de0337fbc3d517fa"
+    },
+    {
+      "source": "Code/Global/LOG_UPLOAD.md",
+      "destination": "LegacyPi/Code/Global/LOG_UPLOAD.md",
+      "bytes": 5256,
+      "sha256": "bae001f5e0670902cfd285f55deb00f4c2e7affb627d924b842c66f45093a4cc"
+    },
+    {
+      "source": "Code/Global/README.md",
+      "destination": "LegacyPi/Code/Global/README.md",
+      "bytes": 3268,
+      "sha256": "34aab5151bdff1f824beedc46a38d5e617ce70cdde69568f060698cdba77d8be"
+    },
+    {
+      "source": "Code/Global/Tests/test_log_upload.py",
+      "destination": "LegacyPi/Code/Global/Tests/test_log_upload.py",
+      "bytes": 11129,
+      "sha256": "d5039b1a33b9dbcfaecbb4a2ff07c65ba86941539fa376001f2dd957b60a0276"
+    },
+    {
+      "source": "Code/Global/__init__.py",
+      "destination": "LegacyPi/Code/Global/__init__.py",
+      "bytes": 67,
+      "sha256": "40e00b4948f2c4083284df11472761622cb6c433b0e6934e442aac6414adb3bb"
+    },
+    {
+      "source": "Code/Global/angle_packet_fallback.py",
+      "destination": "LegacyPi/Code/Global/angle_packet_fallback.py",
+      "bytes": 2292,
+      "sha256": "cdfb0a3932a517c672b9d65fd2f24b8577b9e78be14003bfa29e2e3f1ad65bf4"
+    },
+    {
+      "source": "Code/Global/angle_protocol.py",
+      "destination": "LegacyPi/Code/Global/angle_protocol.py",
+      "bytes": 7697,
+      "sha256": "f68d557552d631d96f0f14c30afe1dfad88c6a690fe8706307113b2d18ca4fa4"
+    },
+    {
+      "source": "Code/Global/install_log_upload.py",
+      "destination": "LegacyPi/Code/Global/install_log_upload.py",
+      "bytes": 3729,
+      "sha256": "8d868671b4f7f68b0abc9586451f8c783fa98025204d4dac15ead3810d675011"
+    },
+    {
+      "source": "Code/Global/live_offset_keys.py",
+      "destination": "LegacyPi/Code/Global/live_offset_keys.py",
+      "bytes": 2531,
+      "sha256": "820d236721d3fd15ccc2c9569de398597694b12c10958cc16f5e84ca299695f1"
+    },
+    {
+      "source": "Code/Global/physical_parameters.py",
+      "destination": "LegacyPi/Code/Global/physical_parameters.py",
+      "bytes": 1497,
+      "sha256": "69cb0f2bbad90018db663dd2f1938975e25c67c6f3fe87127af310868365a90c"
+    },
+    {
+      "source": "Code/Global/restore_csv_log.py",
+      "destination": "LegacyPi/Code/Global/restore_csv_log.py",
+      "bytes": 2560,
+      "sha256": "a20759720a38ddf0b4f205673ff880d53d2719e97447c294f2767c664981f65a"
+    },
+    {
+      "source": "Code/Global/run_csv_logger.py",
+      "destination": "LegacyPi/Code/Global/run_csv_logger.py",
+      "bytes": 4812,
+      "sha256": "59d99f566862037a0bf40eefe0d401938ec36c6d968c906a52690d69f00aad33"
+    },
+    {
+      "source": "Code/Global/upload_csv_logs.py",
+      "destination": "LegacyPi/Code/Global/upload_csv_logs.py",
+      "bytes": 13458,
+      "sha256": "d991bbe9de709096e2f2931737ab0df829b99c2bbc0715e1b0dfac055211847b"
+    },
+    {
+      "source": "Code/Logan_test.py",
+      "destination": "LegacyPi/Code/Logan_test.py",
+      "bytes": 676,
+      "sha256": "6028bb401992905ad0262270d31a9dfe82acfda37eafc1a62a2154b95c780c3b"
+    },
+    {
+      "source": "Code/Old_Code/Arduino_PID_Loop/PIDtest/PIDtest.ino",
+      "destination": "LegacyPi/Code/Old_Code/Arduino_PID_Loop/PIDtest/PIDtest.ino",
+      "bytes": 6437,
+      "sha256": "80cc2e535a6219a23d43c2da3c6e3f2071f35c7ce796071cb742d6cdde8d3ccc"
+    },
+    {
+      "source": "Code/SignalTest.py",
+      "destination": "LegacyPi/Code/SignalTest.py",
+      "bytes": 1968,
+      "sha256": "637c0d5dd9d56856570f4f98edf3d248a00d8cc20974c2bf1e3e450a43c0985d"
+    },
+    {
+      "source": "Code/Single/PendulumExcite/PendulumExcite.py",
+      "destination": "LegacyPi/Code/Single/PendulumExcite/PendulumExcite.py",
+      "bytes": 62128,
+      "sha256": "c68af2082f4fa66e2b367d3b56ac834c5943f7354e18db0ced1c29e18e1fc2c9"
+    },
+    {
+      "source": "Code/SinglePendulum/AngleSensor.py",
+      "destination": "LegacyPi/Code/SinglePendulum/AngleSensor.py",
+      "bytes": 4005,
+      "sha256": "69b1c86789b6f05fee1beeedbba9474f3912a79127061251d4b102ae6bf7cc81"
+    },
+    {
+      "source": "Code/SinglePendulum/AngleSensorDiagnostic.py",
+      "destination": "LegacyPi/Code/SinglePendulum/AngleSensorDiagnostic.py",
+      "bytes": 3184,
+      "sha256": "8516940a6a5654d9a6d735524c85f0f3e691d8a6c50b245f49b6e3090d03134d"
+    },
+    {
+      "source": "Code/SinglePendulum/Logans_PythonMaster.py",
+      "destination": "LegacyPi/Code/SinglePendulum/Logans_PythonMaster.py",
+      "bytes": 9555,
+      "sha256": "193926b47f8628bf46f17b0548cf2f911f22ccf1c16e871d71ba4de4b43de440"
+    },
+    {
+      "source": "Code/SinglePendulum/PythonMaster.py",
+      "destination": "LegacyPi/Code/SinglePendulum/PythonMaster.py",
+      "bytes": 9445,
+      "sha256": "9e61b112628ae929740fcc68776a982fc51783e6ed6b3251281c6749689895f0"
+    },
+    {
+      "source": "Code/SinglePendulum/PythonMasterSwingUpExp.py",
+      "destination": "LegacyPi/Code/SinglePendulum/PythonMasterSwingUpExp.py",
+      "bytes": 30590,
+      "sha256": "28a4344e760c63acc87b78d52f4e84a393bd59bcc709fe3e78e52b68ace19548"
+    },
+    {
+      "source": "Code/SinglePendulum/PythonMasterSwingUpExp2.py",
+      "destination": "LegacyPi/Code/SinglePendulum/PythonMasterSwingUpExp2.py",
+      "bytes": 32827,
+      "sha256": "7b1292f876051042591c93161dc6e8b91885b71468383edbe4d38755ce693322"
+    },
+    {
+      "source": "Code/SinglePendulum/PythonMasterSwingUpExpKCP.py",
+      "destination": "LegacyPi/Code/SinglePendulum/PythonMasterSwingUpExpKCP.py",
+      "bytes": 34095,
+      "sha256": "f1f445adc96e07bbbfda21558b169bd5f85b8341d65fa05be50823a919642939"
+    },
+    {
+      "source": "Code/SinglePendulum/PythonMasterUpExpClaude.py",
+      "destination": "LegacyPi/Code/SinglePendulum/PythonMasterUpExpClaude.py",
+      "bytes": 41628,
+      "sha256": "3b34ce46ce515bc684779da4ee1cfdc7ba2360696072a09977de4df9fa6fb6ad"
+    },
+    {
+      "source": "Code/SinglePendulum/PythonMasterUpExpClaudeImproved.py",
+      "destination": "LegacyPi/Code/SinglePendulum/PythonMasterUpExpClaudeImproved.py",
+      "bytes": 41628,
+      "sha256": "3b34ce46ce515bc684779da4ee1cfdc7ba2360696072a09977de4df9fa6fb6ad"
+    },
+    {
+      "source": "Code/SinglePendulum/PythonMaster_auto.py",
+      "destination": "LegacyPi/Code/SinglePendulum/PythonMaster_auto.py",
+      "bytes": 24415,
+      "sha256": "7922cff179d7d432565bd71e311a83e5a685165e7176470a721c6048d17dfad9"
+    },
+    {
+      "source": "Code/SinglePendulum/PythonMaster_autotest.py",
+      "destination": "LegacyPi/Code/SinglePendulum/PythonMaster_autotest.py",
+      "bytes": 23141,
+      "sha256": "ef263399d5076c645e1f26af1572997ba15384f5fe2f6f03cc51fece318263c4"
+    },
+    {
+      "source": "Code/SinglePendulum/TestingDataForDigitalTwin-Claude.py",
+      "destination": "LegacyPi/Code/SinglePendulum/TestingDataForDigitalTwin-Claude.py",
+      "bytes": 75973,
+      "sha256": "2789c2dd3d18cd623f0bdc24db6b708fa095592c4c8994d26552f86f9ca554ef"
+    },
+    {
+      "source": "Code/SinglePendulum/angle_packet_fallback.py",
+      "destination": "LegacyPi/Code/SinglePendulum/angle_packet_fallback.py",
+      "bytes": 2295,
+      "sha256": "451f5671c89e39633762c12ab4d7125627bea492a2e8f4eff234430edcb55242"
+    },
+    {
+      "source": "Code/SinglePendulum/angle_protocol.py",
+      "destination": "LegacyPi/Code/SinglePendulum/angle_protocol.py",
+      "bytes": 7697,
+      "sha256": "f68d557552d631d96f0f14c30afe1dfad88c6a690fe8706307113b2d18ca4fa4"
+    },
+    {
+      "source": "Code/SinglePendulum/encoder_diagnostic.py",
+      "destination": "LegacyPi/Code/SinglePendulum/encoder_diagnostic.py",
+      "bytes": 2628,
+      "sha256": "8d74bfe4b4ed002303ac0d41732768bb3fe4301a6f84665cce984e79e73c5fd9"
+    },
+    {
+      "source": "Code/SinglePendulum/live_offset_keys.py",
+      "destination": "LegacyPi/Code/SinglePendulum/live_offset_keys.py",
+      "bytes": 2531,
+      "sha256": "820d236721d3fd15ccc2c9569de398597694b12c10958cc16f5e84ca299695f1"
+    },
+    {
+      "source": "Code/SinglePendulum/run_csv_logger.py",
+      "destination": "LegacyPi/Code/SinglePendulum/run_csv_logger.py",
+      "bytes": 4811,
+      "sha256": "29d2072a78fa257f45209d4728da173090437adb3e5cbaa4867c71cced2e1f58"
+    },
+    {
+      "source": "Code/SinglePendulum/swingup_control.py",
+      "destination": "LegacyPi/Code/SinglePendulum/swingup_control.py",
+      "bytes": 3562,
+      "sha256": "7b3b04587e6a145c9cd4db69234a1ed5d87f755c79f348b162c8a4a67fa58f1e"
+    },
+    {
+      "source": "Code/Wireless/ESP32_Code/DebugReceiverMaster/DebugReceiverMaster.ino",
+      "destination": "LegacyPi/Code/Wireless/ESP32_Code/DebugReceiverMaster/DebugReceiverMaster.ino",
+      "bytes": 3954,
+      "sha256": "e464f09463feac0c9aada9d5fa15e092486b4bb8d0fc03a7f178e80e3c4438b7"
+    },
+    {
+      "source": "Code/Wireless/ESP32_Code/Receivermaster/Receivermaster.ino",
+      "destination": "LegacyPi/Code/Wireless/ESP32_Code/Receivermaster/Receivermaster.ino",
+      "bytes": 2330,
+      "sha256": "29bb41bafa9932a1fc0ef2010ef77c6aaa5ff19a14b3aa450c3c9a226abcfb2d"
+    },
+    {
+      "source": "Code/Wireless/ESP32_Code/Receivermaster/Receivermaster.ino.backup",
+      "destination": "LegacyPi/Code/Wireless/ESP32_Code/Receivermaster/Receivermaster.ino.backup",
+      "bytes": 3354,
+      "sha256": "6299e71267a2ab4515a260534c6075311dbd6951e063b625883b018c432dada5"
+    },
+    {
+      "source": "Code/Wireless/ESP32_Code/Receivermaster/angle_protocol.h",
+      "destination": "LegacyPi/Code/Wireless/ESP32_Code/Receivermaster/angle_protocol.h",
+      "bytes": 1963,
+      "sha256": "41f419e772b99fb67a0d67c4abc92941537802c19d3165e6ee64291b56b8edde"
+    },
+    {
+      "source": "Code/Wireless/Transmitters/TX1/TX1.ino",
+      "destination": "LegacyPi/Code/Wireless/Transmitters/TX1/TX1.ino",
+      "bytes": 3353,
+      "sha256": "f12f4246dff58bc03d13a0d0f31252df3f300643f3dbdfd94971ee7c25e19464"
+    },
+    {
+      "source": "Code/Wireless/Transmitters/TX2/TX2.ino",
+      "destination": "LegacyPi/Code/Wireless/Transmitters/TX2/TX2.ino",
+      "bytes": 3353,
+      "sha256": "31655e8fc19b7f11d7b97509d7599d00985802c0a5019462fe42a7256d64886f"
+    },
+    {
+      "source": "MATLAB Simulation/DiscreteSinglePendulum.m",
+      "destination": "LegacyPi/MATLAB Simulation/DiscreteSinglePendulum.m",
+      "bytes": 5914,
+      "sha256": "287e63505682c2a6d50e263322c0026e720811c5e7f5433f886225c5fba97d18"
+    },
+    {
+      "source": "MATLAB Simulation/PIDsim.m",
+      "destination": "LegacyPi/MATLAB Simulation/PIDsim.m",
+      "bytes": 7606,
+      "sha256": "6a5ef8d48441306896794f693dc05e94e2588996537c812a870bb3f21c98d1a8"
+    },
+    {
+      "source": "MATLAB Simulation/PolePlacementTest.m",
+      "destination": "LegacyPi/MATLAB Simulation/PolePlacementTest.m",
+      "bytes": 668,
+      "sha256": "5455d4a08f5597f64ccf33feff5dd75806481b31e03e43c1e118dd19061b85e9"
+    },
+    {
+      "source": "MATLAB Simulation/RK4testing.m",
+      "destination": "LegacyPi/MATLAB Simulation/RK4testing.m",
+      "bytes": 980,
+      "sha256": "e9b0f5a8cf36c760348485f42dc80cebd9254012f3ae5f4e1af4f2733ed293bd"
+    },
+    {
+      "source": "MATLAB Simulation/SinglePendulumMath.m",
+      "destination": "LegacyPi/MATLAB Simulation/SinglePendulumMath.m",
+      "bytes": 5855,
+      "sha256": "6e507158bbb5a6c60762e722c56aab5ae45d717411c02bf9549fa1b6cb1d8952"
+    },
+    {
+      "source": "MATLAB Simulation/SinglePendulumSim.m",
+      "destination": "LegacyPi/MATLAB Simulation/SinglePendulumSim.m",
+      "bytes": 4349,
+      "sha256": "e22fb3d864b512d3977180965b0b8e47075fbf556f050f083e0cddc6afc9f156"
+    },
+    {
+      "source": "MATLAB Simulation/StateEstimation.m",
+      "destination": "LegacyPi/MATLAB Simulation/StateEstimation.m",
+      "bytes": 7437,
+      "sha256": "06cf3a8ce4ba60fe146e08b98da66e3d6619ce6596ca6402c48c6a06330fa934"
+    },
+    {
+      "source": "MATLAB Simulation/cp_sim_2.slx",
+      "destination": "LegacyPi/MATLAB Simulation/cp_sim_2.slx",
+      "bytes": 103904,
+      "sha256": "caea8ac81028d409e24698929c6fffc5de689b1dd9153c2b3ea52ba8ea4ef8eb"
+    },
+    {
+      "source": "README.md",
+      "destination": "LegacyPi/README.original.md",
+      "bytes": 9468,
+      "sha256": "095fbfeb46d04a6a32174423a81e9d561452c37526739e6c6e1c4bce18457bf8"
+    },
+    {
+      "source": "Wiring/Wire_Diagram.png",
+      "destination": "LegacyPi/Wiring/Wire_Diagram.png",
+      "bytes": 129001,
+      "sha256": "648d67d24b5d2d8d0d270f6b33a30db736cf2d07b4f0643447e16b4233b615c8"
+    }
+  ]
+}
