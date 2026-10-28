@@ -1,0 +1,149 @@
+{
+  "description": "Twin parameters fitted by fit_parameters.py; nominal values for everything else come from Code/Global/physical_parameters.py.",
+  "current_configuration_run": "sysid_20261027_175617_double_full_seed302441",
+  "data": [
+    "sysid_20261016_171156_double_full_seed131857",
+    "sysid_20261027_175617_double_full_seed302441"
+  ],
+  "rms_angle_error_deg": 0.6192216175247428,
+  "hanging_modes_hz_fitted": [
+    0.8732256572890132,
+    1.7921014960227795
+  ],
+  "hanging_modes_hz_nominal": [
+    0.891616828302555,
+    1.9002180191755682
+  ],
+  "per_run": [
+    {
+      "run": "sysid_20261016_171156_double_full_seed131857",
+      "windows": 47,
+      "rms_deg": 0.39249419112131223,
+      "hanging_modes_hz": [
+        0.8805733810450413,
+        1.8112158094763975
+      ],
+      "b1": 0.0005372363879846071,
+      "c1": 8.836488391727542e-20,
+      "b2": 3.501365416671574e-17,
+      "c2": 0.0033757858288127867,
+      "kJ1": 1.0131236083834492,
+      "kJ2": 1.116138908560955,
+      "kc": 1.0262483369733544,
+      "kh2": 1.0494826033157558,
+      "sensor_delay_s": 0.0006486015461840358,
+      "motor_tau_s": 0.02665998189694188,
+      "jacobian_sigma": {
+        "b1": 2.6642662790617796e-05,
+        "c1": 1.4737265138161519e-05,
+        "b2": 4.420779490668016e-06,
+        "c2": 9.406751120439664e-06,
+        "kJ1": 0.0004394354247549456,
+        "kJ2": 0.0017477898886652415,
+        "kc": 0.0006519890146736057,
+        "kh2": 0.0013748699092884285,
+        "sensor_delay_s": 0.00011055664883817404,
+        "motor_tau_s": 0.0002890984331533032
+      }
+    },
+    {
+      "run": "sysid_20261027_175617_double_full_seed302441",
+      "windows": 35,
+      "rms_deg": 0.6192216175247428,
+      "hanging_modes_hz": [
+        0.8732256572890132,
+        1.7921014960227795
+      ],
+      "b1": 0.0001773343321652876,
+      "c1": 0.0003055073894498248,
+      "b2": 3.9599728565787295e-05,
+      "c2": 0.0001013848686604629,
+      "kJ1": 1.0735758374587019,
+      "kJ2": 0.9451651608770244,
+      "kc": 0.9715796334013173,
+      "kh2": 0.9073041797169797,
+      "sensor_delay_s": 0.0036411658415116074,
+      "motor_tau_s": 0.002000000005436988,
+      "jacobian_sigma": {
+        "b1": 5.083286382029541e-05,
+        "c1": 2.5564710146842225e-05,
+        "b2": 8.245393656630708e-06,
+        "c2": 8.657960845833789e-06,
+        "kJ1": 0.000995472317362313,
+        "kJ2": 0.003171395813081853,
+        "kc": 0.00136529038475886,
+        "kh2": 0.002529731454200823,
+        "sensor_delay_s": 0.00017874596847125367,
+        "motor_tau_s": 0.005284710196618986
+      }
+    }
+  ],
+  "parameters": {
+    "b1": {
+      "value": 0.0001773343321652876,
+      "sigma": 0.00018699292096204027,
+      "unit": "N m s/rad",
+      "what": "pivot viscous friction"
+    },
+    "c1": {
+      "value": 0.0003055073894498248,
+      "sigma": 0.0001548781639128117,
+      "unit": "N m",
+      "what": "pivot Coulomb friction"
+    },
+    "b2": {
+      "value": 3.9599728565787295e-05,
+      "sigma": 2.144810346331629e-05,
+      "unit": "N m s/rad",
+      "what": "elbow viscous friction"
+    },
+    "c2": {
+      "value": 0.0001013848686604629,
+      "sigma": 0.0016372233727404526,
+      "unit": "N m",
+      "what": "elbow Coulomb friction"
+    },
+    "J1_eff": {
+      "value": 0.012024084721654033,
+      "sigma": 0.0003387170250115565,
+      "unit": "kg m^2",
+      "what": "m1 l1^2 + m2 L1^2 + I1 (nominal 0.0112)"
+    },
+    "J2_eff": {
+      "value": 0.00409747685803409,
+      "sigma": 0.00037085734666379716,
+      "unit": "kg m^2",
+      "what": "m2 l2^2 + I2 (nominal 0.0043352)"
+    },
+    "c_eff": {
+      "value": 0.004325472527902665,
+      "sigma": 0.00012184423773131042,
+      "unit": "kg m^2",
+      "what": "m2 L1 l2 coupling (nominal 0.004452)"
+    },
+    "h1_eff": {
+      "value": 0.060009,
+      "sigma": 0.0,
+      "unit": "kg m",
+      "what": "m1 l1 + m2 L1, held at nominal (sets the overall scale)"
+    },
+    "h2_eff": {
+      "value": 0.020196591040499968,
+      "sigma": 0.0015834474744142878,
+      "unit": "kg m",
+      "what": "m2 l2 (nominal 0.02226)"
+    },
+    "sensor_delay_s": {
+      "value": 0.0036411658415116074,
+      "sigma": 0.0015069208295932727,
+      "unit": "s",
+      "what": "encoder sample -> Pi (radio+receiver+USB), excludes TX sample age"
+    },
+    "motor_tau_s": {
+      "value": 0.002000000005436988,
+      "sigma": 0.013414799237580335,
+      "unit": "s",
+      "what": "1/bandwidth of the stepper servo (weakly identifiable)"
+    }
+  }
+}
