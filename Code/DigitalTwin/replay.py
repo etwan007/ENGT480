@@ -133,7 +133,8 @@ def animate_run(r, path, fps=20, max_s=None):
 
 
 def simulate_and_report(controller, duration_s=20.0, seed=0, start="hanging", out_dir=None,
-                        name=None, animate=True, params=None, kick=0.0, controller_name=None):
+                        name=None, animate=True, params=None, kick=0.0, controller_name=None,
+                        gif_seconds=10.0):
     params = params if params is not None else load_parameters()
     if start == "hanging":
         x0 = hanging_state()
@@ -151,7 +152,7 @@ def simulate_and_report(controller, duration_s=20.0, seed=0, start="hanging", ou
         plot_run(r, out_dir / f"{name}.png", f"Digital twin: {cname}, start {start} (SIMULATED)")
         write_run_csv(r, out_dir / f"{name}.csv", cname)
         if animate:
-            animate_run(r, out_dir / f"{name}.gif")
+            animate_run(r, out_dir / f"{name}.gif", max_s=gif_seconds)
         (out_dir / f"{name}.json").write_text(json.dumps(summary, indent=2) + "\n")
         summary["files"] = [str(out_dir / f"{name}.{ext}") for ext in ("png", "csv", "gif", "json")]
     return out
@@ -169,6 +170,7 @@ def main(argv=None):
     ap.add_argument("--out", default=str(HERE / "run_logs"))
     ap.add_argument("--name", default=None)
     ap.add_argument("--no-animation", action="store_true")
+    ap.add_argument("--gif-seconds", type=float, default=10.0, help="length of the animation")
     args = ap.parse_args(argv)
     if args.controller == "legacy":
         from legacy_controller import LegacyController
@@ -180,7 +182,8 @@ def main(argv=None):
         cfg = ControllerConfig(balance_only=(start == "upright"), swing_mode=args.swing_mode)
         controller = ImprovedController(config=cfg, profile=args.profile)
     out = simulate_and_report(controller, args.duration, args.seed, start, args.out, args.name,
-                              not args.no_animation, kick=args.kick, controller_name=args.controller)
+                              not args.no_animation, kick=args.kick, controller_name=args.controller,
+                              gif_seconds=args.gif_seconds)
     print(json.dumps(out["summary"], indent=2))
     return 0
 

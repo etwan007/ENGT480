@@ -1,0 +1,19 @@
+{
+  "duration_s": 14.998999999997126,
+  "upright_at_end": false,
+  "time_to_balance_s": null,
+  "peak_cart_travel_m": 0.14567127191725018,
+  "peak_cart_speed_m_s": 1.0614020633952845,
+  "limit_switch_hit": false,
+  "stop_reason": "Angle limit exceeded: arm1=-26.6deg, arm2=+59.5deg",
+  "mode_changes": [
+    [
+      0.0,
+      "BALANCE"
+    ],
+    [
+      0.53,
+      "STOPPED"
+    ]
+  ]
+}
