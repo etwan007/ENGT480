@@ -3,3 +3,4 @@ __pycache__/
 *.py[cod]
 Code/SinglePendulum/run_logs/
 Code/DoublePendulum/run_logs/
+Code/DigitalTwin/run_logs/

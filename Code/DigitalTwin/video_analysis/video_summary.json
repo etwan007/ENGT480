@@ -1,0 +1,48 @@
+{
+  "video_frames_tracked": 1436,
+  "video_fps": 59.94005994005994,
+  "tracked_from_s": 5.6056,
+  "tracked_to_s": 29.546183333333335,
+  "log_file": "swingup_double_20261027_185639_236068.csv",
+  "log_time_offset_s": 0.5499999999994003,
+  "px_per_m_from_log": 444.0856863133127,
+  "sync_correlation": 0.9985919011874544,
+  "hanging_pivot_to_tip_px": 190.5,
+  "hanging_pivot_to_tip_m_if_vertical_scale_equals_horizontal": 0.4289712680935135,
+  "video_vs_encoder": {
+    "theta1_bias_deg": -3.644093985244969,
+    "theta1_std_deg": 4.289270001067401,
+    "joint_bias_deg": 5.490326351108358,
+    "joint_std_deg": 7.55221261347127,
+    "joint_abs_p95_deg": 17.014733776052196,
+    "cart_rms_mm": 5.033878868016555,
+    "cart_abs_p95_mm": 9.607711370567321
+  },
+  "link_length_fit": {
+    "frames_link1": 59,
+    "frames_link2": 72,
+    "link1_pivot_to_elbow_m": [
+      0.22067813266752925,
+      0.2296854033886529,
+      0.24319630947033838
+    ],
+    "link2_elbow_to_tip_m": [
+      0.18127132326261333,
+      0.2499517625111811,
+      0.28372902771539477
+    ],
+    "ratio_L2_over_L1_video": 1.088235294117647,
+    "ratio_L2_over_L1_nominal": 1.25,
+    "note": "visible ends include end caps/hubs; [25,50,75] percentiles"
+  },
+  "cart_travel_m": [
+    -0.27584766583441156,
+    0.23756676526963608
+  ],
+  "cart_peak_speed_m_s": 1.045842835720856,
+  "cart_peak_accel_m_s2": 6.739057562098159,
+  "hanging_theta1_freq_hz": [
+    1.770690247252789,
+    1.7267888361638768
+  ]
+}
