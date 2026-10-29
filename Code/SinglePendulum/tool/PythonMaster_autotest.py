@@ -7,26 +7,57 @@ import struct
 import sys
 import atexit
 import traceback
+import json
 from datetime import datetime
+from pathlib import Path
+
+from run_csv_logger import RunCsvLogger
+from angle_packet_fallback import (MissingAnglePacketError, collect_valid_samples,
+                                   estimate_with_angle)
 
 ENCODER_COUNTS = 16384
 HALF_TURN = ENCODER_COUNTS // 2
 LOG_INTERVAL_SECONDS = 0.5
+# Added to the automatically calibrated upright reference. Positive values
+# make the reported angle smaller (for example, +0.30 subtracts 0.30 degrees).
+UPRIGHT_OFFSET_DEG = 0.52
+# Set to False to hide routine output after the motor-on Enter prompt,
+# including control-loop status and normal shutdown messages.
+SHOW_BALANCING_LOGS = True
+# Each control cycle is queued without waiting for disk I/O. A full queue drops
+# samples instead of delaying the motor controller; the CSV reports the count.
+SAVE_RUN_CSV = True
+RUN_LOG_DIRECTORY = Path(__file__).resolve().parent / "run_logs"
 started_at = time.monotonic()
+balancing_output_active = False
+run_logger = None
+run_stop_reason = "program exit"
+run_started_at = None
 current_stage = "starting"
 cycle_count = 0
 latest_raw_angle = None
+latest_raw_angles = None
 latest_position_steps = None
 last_good_angle_read_at = None
 esp32_packet_count = 0
 last_motor_command = None
 
 def log(tag, message):
+    # Keep fault diagnostics visible even when routine balancing logs are off.
+    if balancing_output_active and not SHOW_BALANCING_LOGS and tag not in ("FAULT", "SENSOR"):
+        return
     elapsed = time.monotonic() - started_at
     print(f"[{elapsed:7.2f}s] [{tag}] {message}", flush=True)
 
 
 def report_uncaught(exc_type, exc, tb):
+    global run_stop_reason
+    run_stop_reason = f"{exc_type.__name__}: {exc}"
+    if run_logger is not None:
+        run_logger.event("fault", f"stage={current_stage}; cycle={cycle_count}; "
+                         f"raw_angles={latest_raw_angles}; cart_steps={latest_position_steps}; "
+                         f"motor_command={last_motor_command}; {run_stop_reason}",
+                         "" if run_started_at is None else time.monotonic() - run_started_at)
     log("FAULT", f"stage={current_stage}, cycle={cycle_count}: "
                  f"{exc_type.__name__}: {exc}")
     traceback.print_exception(exc_type, exc, tb)
@@ -47,7 +78,7 @@ def read_exact(port, count, timeout_seconds=0.1):
 
 
 def read_raw_angle1():
-    global latest_raw_angle, last_good_angle_read_at, esp32_packet_count
+    global latest_raw_angle, latest_raw_angles, last_good_angle_read_at, esp32_packet_count
     # ESP32 sends three unsigned 16-bit angles, high byte first.
     try:
         packet = read_exact(esp32, 6)
@@ -57,13 +88,20 @@ def read_raw_angle1():
                       f"complete_packets_before_timeout={esp32_packet_count} "
                       f"last_valid_raw={latest_raw_angle} last_cart_steps={latest_position_steps} "
                       f"last_motor_cmd={last_motor_command}: {exc}")
-        raise
+        latest_raw_angles = (None, None, None)
+        esp32.reset_input_buffer()  # discard a partial packet before the next cycle
+        raise MissingAnglePacketError(str(exc)) from exc
     received_at = time.monotonic()
     esp32_packet_count += 1
     angles = struct.unpack('>HHH', packet)
+    latest_raw_angles = angles
     esp32.reset_input_buffer()  # keep the newest ESP32 packet next time
     if any(value != 0xFFFF and value >= ENCODER_COUNTS for value in angles):
-        raise ValueError(f"Invalid ESP32 angle packet: {angles}")
+        log("SENSOR", f"ANGLE_PACKET_INVALID wall={datetime.now().astimezone().isoformat(timespec='milliseconds')} "
+                      f"stage={current_stage} cycle={cycle_count} "
+                      f"complete_packet={esp32_packet_count} bytes={packet.hex()} "
+                      f"raw_angles={angles}")
+        raise MissingAnglePacketError(f"Invalid ESP32 angle packet: {angles}")
     if angles[0] == 0xFFFF:
         age_ms = (None if last_good_angle_read_at is None else
                   (received_at - last_good_angle_read_at) * 1000)
@@ -74,7 +112,7 @@ def read_raw_angle1():
                       f"raw_angles={angles} last_valid_raw={latest_raw_angle} "
                       f"ms_since_last_valid_Pi_read={age_text} "
                       f"last_cart_steps={latest_position_steps} last_motor_cmd={last_motor_command}")
-        raise RuntimeError("First pendulum angle is missing (ESP32 sent 65535)")
+        raise MissingAnglePacketError("First pendulum angle is missing (ESP32 sent 65535)")
     latest_raw_angle = angles[0]
     last_good_angle_read_at = received_at
     return angles[0]
@@ -84,11 +122,9 @@ def calibrate_from_hanging(sample_count=50):
     """Use the hanging position to estimate the opposite, upright position."""
     log("CAL", f"Reading {sample_count} ESP32 angle packets with the motor off")
     sample_started = time.monotonic()
-    readings = []
-    for index in range(sample_count):
-        readings.append(read_raw_angle1())
-        if index < sample_count - 1:
-            time.sleep(0.02)  # ESP32 sends at 100 Hz; use separated readings.
+    readings, missed_packets = collect_valid_samples(read_raw_angle1, sample_count)
+    if missed_packets:
+        log("CAL", f"Skipped {missed_packets} unusable ESP32 packet(s)")
     readings = np.array(readings, dtype=float)
     phase = readings * (2 * np.pi / ENCODER_COUNTS)
     mean_phase = np.angle(np.mean(np.exp(1j * phase))) % (2 * np.pi)
@@ -240,7 +276,8 @@ Yest = np.array([[0], [0], [0], [0]]) #estimated states
 Ylast = np.array([[0], [0], [0], [0]]) #previous state storage
 YfinalEst = np.array([[0], [0], [0], [0]]) #previous state storage
 
-# The upright correction is measured at the start of every run below.
+# The upright correction is measured at the start of every run, then adjusted
+# by UPRIGHT_OFFSET_DEG.
 
 #initialize serial
 current_stage = "opening ESP32 /dev/ttyUSB0"
@@ -257,21 +294,29 @@ motor_command_sent = False
 def stop_and_close():
     # This runs on a normal exit or Python exception. A Pi crash/power loss
     # still needs a motor-off switch or an Arduino command watchdog.
-    if arduino.is_open:
-        if motor_command_sent:
-            try:
-                log("STOP", "Sending 0xFFFFFFFF stop command to Arduino")
-                arduino.write(struct.pack('<I', 0xFFFFFFFF))
-                arduino.flush()
-            except (serial.SerialException, OSError) as exc:
-                log("FAULT", f"Could not send Arduino stop command: {exc}")
-        else:
-            log("STOP", "No motor command was sent")
-        arduino.close()
-        log("STOP", "Arduino port closed")
-    if esp32.is_open:
-        esp32.close()
-        log("STOP", "ESP32 port closed")
+    try:
+        if arduino.is_open:
+            if motor_command_sent:
+                try:
+                    log("STOP", "Sending 0xFFFFFFFF stop command to Arduino")
+                    arduino.write(struct.pack('<I', 0xFFFFFFFF))
+                    arduino.flush()
+                except (serial.SerialException, OSError) as exc:
+                    log("FAULT", f"Could not send Arduino stop command: {exc}")
+            else:
+                log("STOP", "No motor command was sent")
+            arduino.close()
+            log("STOP", "Arduino port closed")
+        if esp32.is_open:
+            esp32.close()
+            log("STOP", "ESP32 port closed")
+    finally:
+        if run_logger is not None:
+            warning = run_logger.stop(run_stop_reason)
+            if warning:
+                log("FAULT", warning)
+            else:
+                log("STOP", f"CSV saved: {run_logger.path}")
 
 atexit.register(stop_and_close)
 current_stage = "waiting for Arduino startup"
@@ -290,24 +335,55 @@ current_stage = "waiting for hanging pendulum"
 log("READY", "Keep motor power OFF. Center the cart; let pendulum 1 hang still")
 input("Press Enter when it has stopped swinging: ")
 current_stage = "calibrating hanging angle from ESP32"
-correction = calibrate_from_hanging()
+automatic_correction = calibrate_from_hanging()
+correction = ((automatic_correction +
+               UPRIGHT_OFFSET_DEG * ENCODER_COUNTS / 360.0) % ENCODER_COUNTS)
+log("CAL", f"manual upright offset={UPRIGHT_OFFSET_DEG:+.3f} degrees; "
+           f"effective upright reference={correction:.1f} counts")
 current_stage = "waiting for upright pendulum and motor power"
+if SAVE_RUN_CSV:
+    filename = datetime.now().astimezone().strftime("balance_%Y%m%d_%H%M%S_%f.csv")
+    new_logger = RunCsvLogger(RUN_LOG_DIRECTORY / filename)
+    new_logger.start()
+    run_logger = new_logger
+    run_logger.event("config", json.dumps({
+        "schema_version": 1, "sample_period_s": Ts,
+        "pendulum_length_m": length, "center_of_mass_m": lval,
+        "pendulum_inertia_kg_m2": Ival, "pendulum_mass_kg": m1val,
+        "cart_mass_kg": mcartVal, "cart_drag": B_cart_dragVal,
+        "pendulum_drag": T_dragVal, "gravity_m_s2": gval,
+        "automatic_upright_correction_counts": float(automatic_correction),
+        "manual_upright_offset_deg": UPRIGHT_OFFSET_DEG,
+        "upright_correction_counts": float(correction),
+        "controller_gain": np.asarray(Kd).tolist(),
+        "estimator_gain": np.asarray(Ld).tolist(),
+        "discrete_A": np.asarray(ssDisc.A).tolist(),
+        "discrete_B": np.asarray(ssDisc.B).tolist(),
+        "discrete_C": np.asarray(ssDisc.C).tolist(),
+    }, separators=(",", ":")), 0.0)
+    log("LOG", f"Recording every control cycle to {run_logger.path}")
 log("READY", "Check the printed correction; then turn motor power ON and hold pendulum 1 upright")
 input("Now turn motor power ON, hold the pendulum upright, then press Enter: ")
+balancing_output_active = True
+run_started_at = time.monotonic()
+if run_logger is not None:
+    run_logger.event("start", f"upright_correction_counts={correction:.6f}", 0.0)
 
 # Check upright angle before the first motor command.
 current_stage = "checking upright angle from ESP32"
-upright_angles = []
-upright_raw = []
-for index in range(10):
-    upright_angles.append(angleRead(correction))
-    upright_raw.append(latest_raw_angle)
-    if index < 9:
-        time.sleep(0.02)
+upright_samples, missed_packets = collect_valid_samples(
+    lambda: (angleRead(correction), latest_raw_angle), 10, max_total_misses=3)
+upright_angles, upright_raw = zip(*upright_samples)
+if missed_packets:
+    log("CHECK", f"Skipped {missed_packets} unusable ESP32 packet(s)")
 theta1 = float(np.median(upright_angles))
 log("CHECK", f"upright raw first={upright_raw[0]}, last={upright_raw[-1]}, "
              f"distinct={len(set(upright_raw))}, "
              f"angle={np.rad2deg(theta1):+.2f} degrees relative to estimated upright")
+if run_logger is not None:
+    run_logger.event("check", f"upright_angle_deg={np.rad2deg(theta1):+.3f}; "
+                    f"raw_first={upright_raw[0]}; raw_last={upright_raw[-1]}",
+                    time.monotonic() - run_started_at)
 if abs(theta1) > np.deg2rad(12):
     raise RuntimeError(f"Upright check failed ({np.rad2deg(theta1):.1f} degrees). "
                        "Motor command was not sent.")
@@ -328,6 +404,10 @@ current_stage = "waiting for initial Arduino cart position"
 x = positionRead()
 log("START", f"Arduino replied; initial step count={latest_position_steps}, "
              f"cart position={x:+.4f} m")
+if run_logger is not None:
+    run_logger.event("motor_start", f"initial_command={pulses}; "
+                     f"initial_cart_steps={latest_position_steps}; initial_cart_m={x}",
+                     time.monotonic() - run_started_at)
 
 Ylast = np.array([[theta1], [0], [x], [0]])
 
@@ -336,21 +416,32 @@ next_status_log = time.monotonic()
 last_status_time = next_status_log
 last_status_cycle = 0
 max_cycle_ms = 0.0
+previous_cycle_started = None
+consecutive_angle_misses = 0
 log("RUN", "Control loop started; status prints at most twice per second")
 
 try:
     while True:
         cycle_count += 1
         cycle_started = time.monotonic()
+        cycle_period_ms = ("" if previous_cycle_started is None else
+                           (cycle_started - previous_cycle_started) * 1000)
+        previous_cycle_started = cycle_started
         if loop < 250:
             loop = loop + 1
         current_stage = "predicting controller state"
+        previous_force_n = u.item()
         #calculate predicted states (Kalman filter part 1)
         Yest = ssDisc.A @ Ylast + ssDisc.B @ u 
 
 
         current_stage = "reading ESP32 angle"
-        theta1 = angleRead(correction)#read angle
+        sensor_read_started = time.monotonic()
+        try:
+            measured_theta = angleRead(correction)
+        except MissingAnglePacketError:
+            measured_theta = None
+        sensor_read_ms = (time.monotonic() - sensor_read_started) * 1000
 
         #---- ANGLE CORRECTION ----
 #         theta1 = theta1 - np.clip(x/30, a_min=-0.05, a_max=0.05) #correct angle towards center
@@ -358,16 +449,26 @@ try:
 
         current_stage = "updating controller state"
         #load measurements into matrix (using position from last loop)
-        Ymeas = np.array([[theta1], [x]])
-        
-        #Factor in measured states(Kalman filter part 2) (@ for matrix multiplication)
-        YfinalEst = Yest + Ld @ (Ymeas - ssDisc.C @ Yest)
+        cart_used_m = x
+        # On one missing packet, substitute the predicted angle while still
+        # correcting with the available cart position. Two misses stop the run.
+        YfinalEst, theta1, consecutive_angle_misses = estimate_with_angle(
+            Yest, measured_theta, x, ssDisc.C, Ld, consecutive_angle_misses)
+        angle_packet_message = ""
+        if measured_theta is None:
+            angle_packet_message = "ESP32 angle missing; using predicted angle"
+            log("SENSOR", f"{angle_packet_message} at cycle={cycle_count}")
+            if run_logger is not None:
+                run_logger.event("sensor_fallback", angle_packet_message,
+                                 time.monotonic() - run_started_at)
         Ylast = YfinalEst.copy() #store values for next loop
         
         #calculate control force
         u = -Kd @ YfinalEst * 2.0
         if loop < 200: #ramp force up to full
             u = u*(loop/200.0)
+        force_command_n = u.item()
+        ramp_fraction = min(loop / 200.0, 1.0)
         #MAY NEED TO IMPLEMENT PID CORRECTIONS FOR DRIFT
         
         #convert force to velocity and frequency (u.item takes value from 1x1 array)
@@ -392,17 +493,32 @@ try:
             
         current_stage = "sending Arduino motor command"
         #arrange as a 32 bit signed integer for transmission
-        sendPulses = struct.pack('<i', int(pulses))
+        timer_command = int(pulses)
+        sendPulses = struct.pack('<i', timer_command)
         arduino.write(sendPulses) #send top value to Arduino
-        last_motor_command = int(pulses)
+        last_motor_command = timer_command
         
         current_stage = "waiting for Arduino cart position"
+        position_read_started = time.monotonic()
         x = positionRead() #read position from arduino
+        position_read_ms = (time.monotonic() - position_read_started) * 1000
 
         now = time.monotonic()
         loop_ms = (now - cycle_started) * 1000
+        theta_degrees = float(np.rad2deg(theta1))
+        if run_logger is not None:
+            run_logger.sample((
+                "sample", cycle_started - run_started_at, cycle_count,
+                esp32_packet_count, *latest_raw_angles, correction,
+                theta1, theta_degrees, cart_used_m,
+                latest_position_steps, x,
+                *Yest.flat, *YfinalEst.flat,
+                previous_force_n, force_command_n, ramp_fraction,
+                f, timer_command, sensor_read_ms, position_read_ms,
+                loop_ms, cycle_period_ms, angle_packet_message,
+            ))
         max_cycle_ms = max(max_cycle_ms, loop_ms)
-        if now >= next_status_log:
+        if SHOW_BALANCING_LOGS and now >= next_status_log:
             if last_status_cycle == 0:
                 rate_text = "starting"
             else:
@@ -410,10 +526,10 @@ try:
                                max(now - last_status_time, 1e-6))
                 rate_text = f"{observed_hz:.1f}Hz"
             log("RUN", f"cycle={cycle_count} raw={latest_raw_angle} "
-                       f"tilt={np.rad2deg(theta1):+.2f}deg "
+                       f"tilt={theta_degrees:+.2f}deg "
                        f"steps={latest_position_steps} cart={x:+.4f}m "
-                       f"speed_est={xDiv:+.3f}m/s force_cmd={u.item():+.3f} "
-                       f"step_hz={f:+.1f} timer_cmd={int(pulses)} "
+                       f"speed_est={xDiv:+.3f}m/s force_cmd={force_command_n:+.3f} "
+                       f"step_hz={f:+.1f} timer_cmd={timer_command} "
                        f"rate={rate_text} max_cycle={max_cycle_ms:.1f}ms")
             last_status_time = now
             last_status_cycle = cycle_count
@@ -427,4 +543,5 @@ try:
 
 #this section kills the program
 except KeyboardInterrupt: # to end program use ctrl c
+    run_stop_reason = "Ctrl+C"
     log("STOP", f"Ctrl+C received after {cycle_count} cycles")
