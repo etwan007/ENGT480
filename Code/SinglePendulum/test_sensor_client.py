@@ -14,8 +14,9 @@ async def main() -> None:
     client = SensorClient()
     try:
         await client.subscribe(SENSOR_NAME)
+        print('Sending measurement start request: {"type":"start"}')
         await client.start()
-        print("Server acknowledged start; monitoring sensor updates.")
+        print("Server acknowledged start request; monitoring sensor updates.")
 
         previous_seq = client.seq
         previous_time = time.monotonic()
