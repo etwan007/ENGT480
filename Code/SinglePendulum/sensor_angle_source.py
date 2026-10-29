@@ -64,7 +64,7 @@ class SensorAngleSource:
         if self._error is not None:
             error = self._error
             self.close()
-            raise RuntimeError(f"could not start sensor client: {error}") from error
+            raise RuntimeError(f"could not start sensor client at {self.uri}: {error}") from error
 
         deadline = time.monotonic() + first_reading_timeout
         while time.monotonic() < deadline:
@@ -115,8 +115,21 @@ class SensorAngleSource:
     async def _serve(self) -> None:
         client = SensorClient(uri=self.uri)
         try:
-            await asyncio.wait_for(client.subscribe(self.sensor_name), timeout=10.0)
-            await asyncio.wait_for(client.start(), timeout=10.0)
+            try:
+                await asyncio.wait_for(client.subscribe(self.sensor_name), timeout=10.0)
+            except TimeoutError as error:
+                detail = client.last_error or "no WebSocket connection was established"
+                raise TimeoutError(
+                    f"connection timed out after 10s; last transport error: {detail}. "
+                    "Check that the Sensor Server is running and listening at this address"
+                ) from error
+            try:
+                await asyncio.wait_for(client.start(), timeout=10.0)
+            except TimeoutError as error:
+                detail = client.last_error or "the server did not acknowledge the start request"
+                raise TimeoutError(
+                    f"start request timed out after 10s: {detail}"
+                ) from error
             self._ready.set()
             last_signature = None
             while not self._stop_requested.is_set():

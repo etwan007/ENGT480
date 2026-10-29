@@ -110,11 +110,20 @@ def read_sensor1_angle():
         age_sample = sensor_source.latest()
         latest_sensor_sample = age_sample
         if age_sample is None:
-            detail = "no sensor_1 reading received"
-        elif age_sample.angle is None:
-            detail = f"sensor_1 angle invalid; age_us={age_sample.age_us}"
+            sequence_text = "none"
+            timestamp_text = "none"
         else:
-            detail = f"sensor_1 reading stale; age_us={age_sample.age_us}"
+            sequence_text = "none" if age_sample.seq is None else str(age_sample.seq)
+            timestamp_text = ("none" if age_sample.timestamp_us is None
+                              else str(age_sample.timestamp_us))
+        status = (f"connected={sensor_source.connected}; last_error={sensor_source.last_error}; "
+                  f"seq={sequence_text}; timestamp_us={timestamp_text}")
+        if age_sample is None:
+            detail = f"no sensor_1 reading received; {status}"
+        elif age_sample.angle is None:
+            detail = f"sensor_1 angle invalid; age_us={age_sample.age_us}; {status}"
+        else:
+            detail = f"sensor_1 reading stale; age_us={age_sample.age_us}; {status}"
         latest_angle_message = detail
         raise MissingAnglePacketError(detail)
     latest_sensor_sample = sample
@@ -581,13 +590,22 @@ max_cycle_ms = 0.0
 previous_cycle_started = None
 consecutive_angle_misses = 0
 identify_started = time.monotonic()
+next_cycle_deadline = time.monotonic() + Ts
 log("RUN", f"Control loop started in IDENTIFY mode: wiggle, then time {ID_COAST_S:.1f} s of free swings "
            f"(model predicts a {2 * np.pi / w0_model:.3f} s swing)")
 
 try:
     while True:
+        sleep_time = next_cycle_deadline - time.monotonic()
+        if sleep_time > 0:
+            time.sleep(sleep_time)
         cycle_count += 1
         cycle_started = time.monotonic()
+        if cycle_started - next_cycle_deadline > Ts:
+            # Skip missed deadlines instead of running catch-up cycles. The
+            # controller matrices are designed for a 100 Hz sample period.
+            next_cycle_deadline = cycle_started
+        next_cycle_deadline += Ts
         cycle_period_ms = ("" if previous_cycle_started is None else
                            (cycle_started - previous_cycle_started) * 1000)
         swing_dt = Ts if previous_cycle_started is None else min(cycle_period_ms / 1000.0, 0.03)
