@@ -4,8 +4,8 @@ In this repository, the controllers live in `Code/SinglePendulum/` and `Code/Dou
 
 ## Record a run
 
-Both `PythonMaster_auto.py` (single pendulum) and
-`PythonMaster2_auto.py` (double pendulum) have these settings near the top:
+`Code/SinglePendulum/PythonMaster.py` (single pendulum) and
+`Code/DoublePendulum/PythonMaster2_auto.py` (double pendulum) have these settings near the top:
 
 - `SAVE_RUN_CSV = True` records the run. Set it to `False` to disable CSV logging.
 - `RUN_LOG_DIRECTORY` controls where files are saved. By default, the script creates a `run_logs` folder beside itself.
@@ -29,22 +29,24 @@ The animation uses the reported cart position and measured angles. The cart scal
 
 ## What is in each sample
 
-- Timing: elapsed time since the motor-on Enter prompt, cycle number, ESP32 packet number, sensor and position read times, loop calculation time, and the actual period since the previous cycle started.
-- Measurements: all three raw ESP32 angles, calibrated angle in radians and degrees, cart step count, and cart position. `cart_used_m` is the position from the preceding Arduino response that the estimator used this cycle; `cart_m` is the new response after the motor command.
+- Timing: elapsed time since the motor-on Enter prompt, cycle number, sensor update sequence and timestamp, sensor and position read times, loop calculation time, and the actual period since the previous cycle started.
+- Single-pendulum measurements: `sensor_1` angle in radians, angular velocity in radians per second, reading age in microseconds, calibrated angle in radians and degrees, cart step count, and cart position. `cart_used_m` is the position from the preceding Arduino response that the estimator used this cycle; `cart_m` is the new response after the motor command.
+- Double-pendulum measurements: all three raw ESP32 angles, both calibrated angles, cart step count, and cart position.
 - Controller state: the four predicted states, four corrected estimated states, previous and current force commands, force ramp fraction, requested step frequency, and integer motor timer command.
 - Calibration and setup: the upright correction on every sample, plus model parameters and gain matrices in the `config` event.
 
 Double-pendulum samples use a wider header with both measured absolute angles, the second joint angle, all three raw ESP32 channels, six predicted and six estimated states, the cart velocity command, and the arm 1 encoder reference before and after its centering adjustment. The `config` event includes the controller and estimator matrices.
 
-The CSV uses a fixed header. Event rows have `record_type` values such as `start`, `config`, `check`, `motor_start`, `fault`, and `stop`; cycle data has `record_type=sample`. Blank cells on event rows are expected.
+The single-pendulum Sensor Server log uses schema version 3; its `config` event records the sensor name, WebSocket address, and angle sign. The CSV uses a fixed header. Event rows have `record_type` values such as `start`, `config`, `check`, `motor_start`, `fault`, and `stop`; cycle data has `record_type=sample`. Blank cells on event rows are expected.
 
-For either controller, a `sensor_fallback` event marks a cycle that substituted a predicted angle because an ESP32 angle packet or required channel was unusable. The sample's `message` column records the same fallback. For the double pendulum, the controller still uses whichever of angle channels 1 and 2 was valid; two consecutive cycles with an unusable required channel stop the motor. During startup calibration and the upright check, unusable packets are retried within a small limit, and repeated failures abort before balancing.
+For either controller, a `sensor_fallback` event marks a cycle that substituted a predicted angle because a required sensor reading was unusable or stale. The sample's `message` column records the same fallback. For the double pendulum, the controller still uses whichever of angle channels 1 and 2 was valid; two consecutive cycles with an unusable required channel stop the motor. During startup calibration and the upright check, unusable readings are retried within a small limit, and repeated failures abort before balancing.
 
 ## Receiver protocol and dropout reasons
 
-The current controllers require receiver protocol v1. Deploy the receiver and
-Python updates together; see [protocol and deployment instructions](../Wireless/ANGLE_PROTOCOL.md).
-CSV schema version 2 records each channel's status (`valid`,
+The double-pendulum controller and legacy ESP32-based tools require receiver
+protocol v1. Deploy the receiver and Python updates together; see
+[protocol and deployment instructions](../Wireless/ANGLE_PROTOCOL.md).
+Those CSV logs record each channel's status (`valid`,
 `encoder_read_failed`, `wireless_timeout`, or `never_received`) and radio age,
 plus receiver sequence/uptime and serial parsing counters. The `message` field
 records transport failures and the reason for prediction fallback. Both older

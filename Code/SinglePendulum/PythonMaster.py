@@ -12,13 +12,15 @@ from datetime import datetime
 from pathlib import Path
 
 from run_csv_logger import RunCsvLogger
-from angle_protocol import AnglePacketReader, AngleProtocolError, packet_csv_values
 from live_offset_keys import LiveOffsetKeys
 from angle_packet_fallback import (MissingAnglePacketError, collect_valid_samples,
                                    estimate_with_angle)
+from sensor_angle_source import SensorAngleSource
 
-ENCODER_COUNTS = 16384
-HALF_TURN = ENCODER_COUNTS // 2
+SENSOR_MAX_AGE_US = 100_000
+SENSOR_ANGLE_SIGN = 1.0  # Set to -1.0 if sensor_1 positive rotation opposes the controller model.
+TIMESTAMP_MASK = (1 << 64) - 1
+MAX_IDENTIFY_TIMESTAMP_GAP_US = 1_000_000
 LOG_INTERVAL_SECONDS = 0.5
 # Added to the automatically calibrated upright reference. Positive values
 # make the reported angle smaller (for example, +0.30 subtracts 0.30 degrees).
@@ -40,15 +42,25 @@ run_started_at = None
 current_stage = "starting"
 cycle_count = 0
 latest_raw_angle = None
-latest_raw_angles = None
+latest_sensor_sample = None
 latest_position_steps = None
-last_good_angle_read_at = None
-esp32_packet_count = 0
+sensor_source = None
 last_motor_command = None
 offset_keys = LiveOffsetKeys()
-angle_reader = AnglePacketReader()
-latest_angle_packet = None
 latest_angle_message = ""
+identify_last_timestamp_us = None
+identify_elapsed_us = 0
+
+SENSOR_CSV_COLUMNS = (
+    "record_type", "elapsed_s", "cycle", "sensor_seq", "sensor_timestamp_us",
+    "sensor_angle_rad", "sensor_rad_s", "sensor_age_us", "upright_reference_rad",
+    "measured_angle_rad", "measured_angle_deg", "cart_used_m", "cart_steps", "cart_m",
+    "pred_angle_rad", "pred_angle_rate_rad_s", "pred_cart_m", "pred_cart_velocity_m_s",
+    "est_angle_rad", "est_angle_rate_rad_s", "est_cart_m", "est_cart_velocity_m_s",
+    "previous_force_n", "force_command_n", "ramp_fraction", "step_frequency_hz",
+    "motor_timer_command", "sensor_read_ms", "position_read_ms", "loop_ms",
+    "cycle_period_ms", "message",
+)
 
 def log(tag, message):
     # Keep fault diagnostics visible even when routine balancing logs are off.
@@ -63,7 +75,7 @@ def report_uncaught(exc_type, exc, tb):
     run_stop_reason = f"{exc_type.__name__}: {exc}"
     if run_logger is not None:
         run_logger.event("fault", f"stage={current_stage}; cycle={cycle_count}; "
-                         f"raw_angles={latest_raw_angles}; cart_steps={latest_position_steps}; "
+                         f"sensor_sample={latest_sensor_sample}; cart_steps={latest_position_steps}; "
                          f"motor_command={last_motor_command}; angle_details={latest_angle_message}; {run_stop_reason}",
                          "" if run_started_at is None else time.monotonic() - run_started_at)
     log("FAULT", f"stage={current_stage}, cycle={cycle_count}: "
@@ -85,67 +97,56 @@ def read_exact(port, count, timeout_seconds=0.1):
     return data
 
 
-def read_raw_angle1():
-    global latest_raw_angle, latest_raw_angles, last_good_angle_read_at, esp32_packet_count
-    global latest_angle_packet, latest_angle_message
-    latest_angle_packet = None
+def wrap_angle(angle):
+    return (float(angle) + np.pi) % (2 * np.pi) - np.pi
+
+
+def read_sensor1_angle():
+    global latest_raw_angle, latest_sensor_sample
+    global latest_angle_message
     latest_angle_message = ""
-    try:
-        packet = angle_reader.read_latest(esp32)
-    except AngleProtocolError as exc:
-        latest_raw_angles = (None, None, None)
-        latest_angle_message = str(exc)
-        log("SENSOR", f"ESP32_PACKET_TIMEOUT cycle={cycle_count}: {exc}")
-        raise MissingAnglePacketError(str(exc)) from exc
-    latest_angle_packet = packet
-    esp32_packet_count += 1
-    latest_raw_angles = packet.angles
-    received_at = time.monotonic()
-    if packet.angles[0] == 0xFFFF:
-        latest_angle_message = packet.channel_message(0)
-        age_ms = (None if last_good_angle_read_at is None else
-                  (received_at - last_good_angle_read_at) * 1000)
-        age_text = "none" if age_ms is None else f"{age_ms:.1f}"
-        log("SENSOR", f"ANGLE1_MISSING wall={datetime.now().astimezone().isoformat(timespec='milliseconds')} "
-                      f"stage={current_stage} cycle={cycle_count} "
-                      f"sequence={packet.sequence} {latest_angle_message} "
-                      f"raw_angles={packet.angles} last_valid_raw={latest_raw_angle} "
-                      f"ms_since_last_valid_Pi_read={age_text} "
-                      f"last_cart_steps={latest_position_steps} last_motor_cmd={last_motor_command}")
-        raise MissingAnglePacketError(latest_angle_message)
-    latest_raw_angle = packet.angles[0]
-    last_good_angle_read_at = received_at
-    return packet.angles[0]
+    sample = sensor_source.latest(max_age_us=SENSOR_MAX_AGE_US)
+    if sample is None or sample.angle is None:
+        age_sample = sensor_source.latest()
+        latest_sensor_sample = age_sample
+        if age_sample is None:
+            detail = "no sensor_1 reading received"
+        elif age_sample.angle is None:
+            detail = f"sensor_1 angle invalid; age_us={age_sample.age_us}"
+        else:
+            detail = f"sensor_1 reading stale; age_us={age_sample.age_us}"
+        latest_angle_message = detail
+        raise MissingAnglePacketError(detail)
+    latest_sensor_sample = sample
+    latest_raw_angle = sample.angle
+    return wrap_angle(SENSOR_ANGLE_SIGN * sample.angle)
 
 
 def calibrate_from_hanging(sample_count=50):
     """Use the hanging position to estimate the opposite, upright position."""
-    log("CAL", f"Reading {sample_count} ESP32 angle packets with the motor off")
+    log("CAL", f"Reading {sample_count} sensor_1 angles with the motor off")
     sample_started = time.monotonic()
-    readings, missed_packets = collect_valid_samples(read_raw_angle1, sample_count)
+    readings, missed_packets = collect_valid_samples(read_sensor1_angle, sample_count)
     if missed_packets:
-        log("CAL", f"Skipped {missed_packets} unusable ESP32 packet(s)")
+        log("CAL", f"Skipped {missed_packets} unusable sensor_1 reading(s)")
     readings = np.array(readings, dtype=float)
-    phase = readings * (2 * np.pi / ENCODER_COUNTS)
-    mean_phase = np.angle(np.mean(np.exp(1j * phase))) % (2 * np.pi)
-    down = mean_phase * ENCODER_COUNTS / (2 * np.pi)
-    deviations = (readings - down + HALF_TURN) % ENCODER_COUNTS - HALF_TURN
+    down = float(np.angle(np.mean(np.exp(1j * readings))))
+    deviations = np.array([wrap_angle(value - down) for value in readings])
     max_deviation = np.max(np.abs(deviations))
-    log("CAL", f"raw first={readings[0]:.0f}, last={readings[-1]:.0f}, "
+    log("CAL", f"angle first={readings[0]:+.4f}, last={readings[-1]:+.4f} rad, "
                f"distinct={len(np.unique(readings))}, "
                f"elapsed={time.monotonic() - sample_started:.2f}s, "
-               f"largest deviation={max_deviation:.1f} counts")
-    if max_deviation > 80:
+               f"largest deviation={np.rad2deg(max_deviation):.2f} degrees")
+    if max_deviation > np.deg2rad(80 * 360 / 16384):
         raise RuntimeError("Hanging angle moved too much; let it settle and restart")
-    upright = (down + HALF_TURN) % ENCODER_COUNTS
-    log("CAL", f"hanging={down:.1f}, estimated upright={upright:.1f} counts")
+    upright = wrap_angle(down + np.pi)
+    log("CAL", f"hanging={down:+.4f} rad, estimated upright reference={upright:+.4f} rad")
     return upright
 
 
 def angleRead(cor):
-    raw = read_raw_angle1()
-    delta = (raw - cor + HALF_TURN) % ENCODER_COUNTS - HALF_TURN
-    return delta * (2 * np.pi / ENCODER_COUNTS)
+    raw = read_sensor1_angle()
+    return wrap_angle(raw - cor)
 
 def positionRead():
     global latest_position_steps
@@ -298,13 +299,8 @@ mode           = MODE_IDENTIFY
 w0_model       = float(np.sqrt(m1val * gval * lval / (Ival + m1val * lval**2)))
 w0             = w0_model
 identify_started = None
-identify_log   = []          # (receiver ms, angle from hanging) while coasting
-
-# Finite-difference thetaDot estimator state
-theta_prev     = None    # initialised after the first angle read below
-theta_prev_receiver_ms = None
-theta_dot_est  = 0.0
-alpha_td       = 0.3     # IIR coeff: 0 = raw derivative, 1 = completely frozen
+identify_log   = []          # (unwrapped server timestamp ms, angle from hanging)
+theta_dot_est  = 0.0         # sensor_client rad_s, already radians per second
 
 # Swing-up cart velocity command and status
 energy_target  = SWING_ENERGY_TARGET
@@ -321,23 +317,27 @@ swing_energy_peak = -1.0
 # =====================================================================
 
 
-def update_theta_velocity(measured_theta, packet):
-    """Use receiver-frame elapsed time, including skipped or missing readings."""
-    global theta_prev, theta_prev_receiver_ms, theta_dot_est
-    if measured_theta is None:
-        return
-    receiver_ms = packet.receiver_ms
-    if theta_prev is not None and theta_prev_receiver_ms is not None:
-        elapsed_ms = (receiver_ms - theta_prev_receiver_ms) & 0xFFFFFFFF
-        if 0 < elapsed_ms < 0x80000000:
-            d_theta = (measured_theta - theta_prev + np.pi) % (2 * np.pi) - np.pi
-            theta_dot_raw = d_theta / (elapsed_ms / 1000.0)
-            theta_dot_est = alpha_td * theta_dot_est + (1 - alpha_td) * theta_dot_raw
-        else:
-            # Re-seed on receiver restart or a zero-time interval.
-            theta_dot_est = 0.0
-    theta_prev = measured_theta
-    theta_prev_receiver_ms = receiver_ms
+def identify_time_ms(timestamp_us):
+    """Unwrap the server's uint64 microsecond clock; re-seed after start/reconnect."""
+    global identify_last_timestamp_us, identify_elapsed_us, identify_log
+    if timestamp_us is None:
+        return None
+    timestamp_us = int(timestamp_us) & TIMESTAMP_MASK
+    if identify_last_timestamp_us is None:
+        identify_last_timestamp_us = timestamp_us
+        return identify_elapsed_us / 1000.0
+    delta_us = (timestamp_us - identify_last_timestamp_us) & TIMESTAMP_MASK
+    identify_last_timestamp_us = timestamp_us
+    if delta_us == 0:
+        return None
+    if delta_us > MAX_IDENTIFY_TIMESTAMP_GAP_US:
+        # A start/reconnect resets the server clock origin. A normal uint64
+        # rollover instead produces a small modular delta and remains valid.
+        identify_log.clear()
+        identify_elapsed_us = 0
+        return None
+    identify_elapsed_us += delta_us
+    return identify_elapsed_us / 1000.0
 
 
 def identify_accel(t_id):
@@ -411,10 +411,6 @@ current_stage = "waiting for hanging pendulum and motor power off"
 log("READY", "Turn motor power OFF. Center the cart; let pendulum 1 hang still")
 input("With motor power OFF and the pendulum still, press Enter to reset the Arduino: ")
 
-current_stage = "opening ESP32 /dev/ttyUSB0"
-log("START", current_stage)
-esp32 = serial.Serial('/dev/ttyUSB0', 921600, timeout=0.003)
-log("START", "ESP32 port open at 921600 baud")
 current_stage = "opening Arduino /dev/ttyACM0"
 log("START", current_stage)
 arduino = serial.Serial('/dev/ttyACM0', 115200, timeout=0.003,
@@ -436,10 +432,13 @@ def stop_and_close():
                 log("STOP", "No motor command was sent")
             arduino.close()
             log("STOP", "Arduino port closed")
-        if esp32.is_open:
-            esp32.close()
-            log("STOP", "ESP32 port closed")
     finally:
+        if sensor_source is not None:
+            try:
+                sensor_source.close()
+                log("STOP", "SensorClient stopped and disconnected")
+            except Exception as exc:
+                log("FAULT", f"SensorClient shutdown failed: {exc}")
         offset_keys.close()
         if run_logger is not None:
             warning = run_logger.stop(run_stop_reason)
@@ -463,33 +462,36 @@ line = 0x00000000
 time.sleep(0.1)
 
 arduino.reset_input_buffer()
-esp32.reset_input_buffer()
-log("START", "Cleared old serial input bytes")
+log("START", "Cleared old Arduino serial input bytes")
 
-log("READY", "Keep motor power OFF and pendulum 1 hanging still during calibration")
-current_stage = "calibrating hanging angle from ESP32"
-angle_reader.discard_pending(esp32)
+log("READY", "Keep motor power OFF and pendulum 1 hanging still during sensor calibration")
+current_stage = "connecting SensorClient to sensor_1"
+sensor_source = SensorAngleSource()
+sensor_source.start()
+log("START", f"SensorClient connected to {sensor_source.uri}, subscribed to {sensor_source.sensor_name}")
+current_stage = "calibrating hanging angle from sensor_1"
 automatic_correction = calibrate_from_hanging()
-correction = ((automatic_correction +
-               UPRIGHT_OFFSET_DEG * ENCODER_COUNTS / 360.0) % ENCODER_COUNTS)
+correction = wrap_angle(automatic_correction + np.deg2rad(UPRIGHT_OFFSET_DEG))
 log("CAL", f"manual upright offset={UPRIGHT_OFFSET_DEG:+.3f} degrees; "
-           f"effective upright reference={correction:.1f} counts")
+           f"effective upright reference={correction:+.5f} rad")
 current_stage = "waiting for motor power on (swing-up mode)"
 if SAVE_RUN_CSV:
     filename = datetime.now().astimezone().strftime("balance_%Y%m%d_%H%M%S_%f.csv")
-    new_logger = RunCsvLogger(RUN_LOG_DIRECTORY / filename)
+    new_logger = RunCsvLogger(RUN_LOG_DIRECTORY / filename, columns=SENSOR_CSV_COLUMNS)
     new_logger.start()
     run_logger = new_logger
     run_logger.event("config", json.dumps({
-        "schema_version": 2, "angle_protocol_version": 1, "sample_period_s": Ts,
+        "schema_version": 3, "sensor_api": "Sensor Server WebSocket", "sample_period_s": Ts,
+        "sensor_name": sensor_source.sensor_name, "sensor_uri": sensor_source.uri,
+        "sensor_angle_sign": SENSOR_ANGLE_SIGN,
         "pendulum_length_m": length, "center_of_mass_m": lval,
         "pendulum_inertia_kg_m2": Ival, "pendulum_mass_kg": m1val,
         "cart_mass_kg": mcartVal, "cart_drag": B_cart_dragVal,
         "pendulum_drag": T_dragVal, "gravity_m_s2": gval,
-        "automatic_upright_correction_counts": float(automatic_correction),
+        "automatic_upright_reference_rad": float(automatic_correction),
         "manual_upright_offset_deg": UPRIGHT_OFFSET_DEG,
         "live_offset_step_deg": LIVE_OFFSET_STEP_DEG,
-        "upright_correction_counts": float(correction),
+        "upright_reference_rad": float(correction),
         "controller_gain": np.asarray(Kd).tolist(),
         "estimator_gain": np.asarray(Ld).tolist(),
         "discrete_A": np.asarray(ssDisc.A).tolist(),
@@ -518,25 +520,24 @@ input("Turn motor power ON (pendulum hanging freely), then press Enter: ")
 balancing_output_active = True
 run_started_at = time.monotonic()
 if run_logger is not None:
-    run_logger.event("start", f"upright_correction_counts={correction:.6f}", 0.0)
+    run_logger.event("start", f"upright_reference_rad={correction:.8f}", 0.0)
 
 # Read initial angle from hanging position (no upright check needed for swing-up).
-current_stage = "reading initial hanging angle from ESP32"
-angle_reader.discard_pending(esp32)
+current_stage = "reading initial hanging angle from sensor_1"
 initial_samples, missed_packets = collect_valid_samples(
     lambda: (angleRead(correction), latest_raw_angle), 10, max_total_misses=3)
 initial_angles, initial_raw = zip(*initial_samples)
 if missed_packets:
-    log("CHECK", f"Skipped {missed_packets} unusable ESP32 packet(s)")
+    log("CHECK", f"Skipped {missed_packets} unusable sensor_1 reading(s)")
 theta1 = float(initial_angles[-1])
 hanging_error_deg = np.rad2deg((np.median(np.abs(initial_angles)) - np.pi))
-log("CHECK", f"initial raw first={initial_raw[0]}, last={initial_raw[-1]}, "
+log("CHECK", f"initial sensor angle first={initial_raw[0]:+.4f}, last={initial_raw[-1]:+.4f} rad, "
              f"distinct={len(set(initial_raw))}, "
              f"angle={np.rad2deg(theta1):+.2f} degrees relative to estimated upright "
              f"(expect ≈ ±180° if hanging)")
 if run_logger is not None:
     run_logger.event("check", f"initial_angle_deg={np.rad2deg(theta1):+.3f}; "
-                    f"raw_first={initial_raw[0]}; raw_last={initial_raw[-1]}",
+                    f"sensor_angle_first={initial_raw[0]}; sensor_angle_last={initial_raw[-1]}",
                     time.monotonic() - run_started_at)
 if abs(hanging_error_deg) > 20:
     raise RuntimeError(f"Pendulum is {abs(hanging_error_deg):.0f} degrees from hanging; "
@@ -567,9 +568,10 @@ if run_logger is not None:
 Ylast = np.array([[theta1], [0], [x], [0]])
 x_start = x
 
-# Pair the last measured angle with its receiver timestamp for the derivative.
-theta_prev = float(initial_angles[-1])
-theta_prev_receiver_ms = latest_angle_packet.receiver_ms
+# Seed the identify timestamp baseline. The API clock is reset by start(); later
+# uint64 wraparound is handled by identify_time_ms().
+if latest_sensor_sample is not None:
+    identify_last_timestamp_us = latest_sensor_sample.timestamp_us
 
 loop = 0
 next_status_log = time.monotonic()
@@ -597,14 +599,10 @@ try:
         if offset_steps:
             offset_delta_deg = offset_steps * LIVE_OFFSET_STEP_DEG
             UPRIGHT_OFFSET_DEG += offset_delta_deg
-            correction = ((automatic_correction + UPRIGHT_OFFSET_DEG *
-                           ENCODER_COUNTS / 360.0) % ENCODER_COUNTS)
+            correction = wrap_angle(automatic_correction + np.deg2rad(UPRIGHT_OFFSET_DEG))
             Ylast[0, 0] -= np.deg2rad(offset_delta_deg)
-            if theta_prev is not None:
-                theta_prev = ((theta_prev - np.deg2rad(offset_delta_deg) + np.pi)
-                              % (2 * np.pi) - np.pi)
             offset_message = (f"cycle={cycle_count}; manual_upright_offset_deg={UPRIGHT_OFFSET_DEG:+.6f}; "
-                              f"delta_deg={offset_delta_deg:+.6f}; upright_correction_counts={correction:.6f}")
+                              f"delta_deg={offset_delta_deg:+.6f}; upright_reference_rad={correction:.8f}")
             if run_logger is not None:
                 run_logger.event("manual_offset", offset_message,
                                  time.monotonic() - run_started_at)
@@ -613,7 +611,7 @@ try:
         #calculate predicted states (Kalman filter part 1)
         Yest = ssDisc.A @ Ylast + ssDisc.B @ u
 
-        current_stage = "reading ESP32 angle"
+        current_stage = "reading sensor_1 angle"
         sensor_read_started = time.monotonic()
         try:
             measured_theta = angleRead(correction)
@@ -621,8 +619,10 @@ try:
             measured_theta = None
         sensor_read_ms = (time.monotonic() - sensor_read_started) * 1000
 
-        # Receiver timestamps account for skipped frames and missed readings.
-        update_theta_velocity(measured_theta, latest_angle_packet)
+        if measured_theta is not None and latest_sensor_sample is not None:
+            # SensorClient rad_s is already signed radians per second.
+            theta_dot_est = (0.0 if latest_sensor_sample.rad_s is None
+                             else SENSOR_ANGLE_SIGN * latest_sensor_sample.rad_s)
 
         current_stage = "updating controller state"
         cart_used_m = x
@@ -656,9 +656,11 @@ try:
                 swing_accel = 0.0
                 xDiv_swing = 0.0
                 if (t_id > kick_end + ID_SETTLE_S and measured_theta is not None
-                        and latest_angle_packet is not None):
-                    identify_log.append((latest_angle_packet.receiver_ms,
-                                         (theta1 % (2 * np.pi)) - np.pi))
+                        and latest_sensor_sample is not None):
+                    sample_time_ms = identify_time_ms(latest_sensor_sample.timestamp_us)
+                    if sample_time_ms is not None:
+                        identify_log.append((sample_time_ms,
+                                             (theta1 % (2 * np.pi)) - np.pi))
             coast_done = t_id > kick_end + ID_SETTLE_S + ID_COAST_S
             if not coast_done and len(identify_log) > 50 and cycle_count % 10 == 0:
                 early = measure_natural_frequency(identify_log)
@@ -761,11 +763,8 @@ try:
                 new_offset = float(np.clip(UPRIGHT_OFFSET_DEG + trim_deg, -AUTO_TRIM_MAX_DEG, AUTO_TRIM_MAX_DEG))
                 trim_deg = new_offset - UPRIGHT_OFFSET_DEG
                 UPRIGHT_OFFSET_DEG = new_offset
-                correction = ((automatic_correction + UPRIGHT_OFFSET_DEG *
-                               ENCODER_COUNTS / 360.0) % ENCODER_COUNTS)
+                correction = wrap_angle(automatic_correction + np.deg2rad(UPRIGHT_OFFSET_DEG))
                 Ylast[0, 0] -= np.deg2rad(trim_deg)
-                if theta_prev is not None:
-                    theta_prev = ((theta_prev - np.deg2rad(trim_deg) + np.pi) % (2 * np.pi) - np.pi)
             mode_message = f"mode=LQG; upright_offset_deg={UPRIGHT_OFFSET_DEG:+.4f}"
 
         # ---- output: force for the estimator, cart speed for the motor ----
@@ -818,14 +817,17 @@ try:
         if run_logger is not None:
             run_logger.sample((
                 "sample", cycle_started - run_started_at, cycle_count,
-                esp32_packet_count, *latest_raw_angles, correction,
-                theta1, theta_degrees, cart_used_m,
+                "" if latest_sensor_sample is None or latest_sensor_sample.seq is None else latest_sensor_sample.seq,
+                "" if latest_sensor_sample is None or latest_sensor_sample.timestamp_us is None else latest_sensor_sample.timestamp_us,
+                "" if latest_sensor_sample is None or latest_sensor_sample.angle is None else latest_sensor_sample.angle,
+                "" if latest_sensor_sample is None or latest_sensor_sample.rad_s is None else latest_sensor_sample.rad_s,
+                "" if latest_sensor_sample is None else latest_sensor_sample.age_us,
+                correction, theta1, theta_degrees, cart_used_m,
                 latest_position_steps, x,
                 *Yest.flat, *YfinalEst.flat,
                 previous_force_n, force_command_n, ramp_fraction,
                 f, timer_command, sensor_read_ms, position_read_ms,
-                loop_ms, cycle_period_ms,
-                *packet_csv_values(latest_angle_packet, angle_reader), angle_packet_message,
+                loop_ms, cycle_period_ms, angle_packet_message,
             ))
         max_cycle_ms = max(max_cycle_ms, loop_ms)
         if SHOW_BALANCING_LOGS and now >= next_status_log:
@@ -835,7 +837,7 @@ try:
                 observed_hz = ((cycle_count - last_status_cycle) /
                                max(now - last_status_time, 1e-6))
                 rate_text = f"{observed_hz:.1f}Hz"
-            log("RUN", f"[{MODE_NAMES[mode]}] cycle={cycle_count} raw={latest_raw_angle} "
+            log("RUN", f"[{MODE_NAMES[mode]}] cycle={cycle_count} sensor_angle={latest_raw_angle:+.4f}rad "
                        f"tilt={theta_degrees:+.2f}deg "
                        f"offset={UPRIGHT_OFFSET_DEG:+.3f}deg "
                        f"thetaDot={theta_dot_est:+.2f}r/s "
