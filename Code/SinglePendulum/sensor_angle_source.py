@@ -76,8 +76,8 @@ class SensorAngleSource:
             if self._stopped.is_set():
                 break
             time.sleep(0.002)
-        self.close()
         detail = self._startup_reading_status()
+        self.close()
         raise TimeoutError(f"sensor source did not provide a fresh reading: {detail}")
 
     def _startup_reading_status(self) -> str:
