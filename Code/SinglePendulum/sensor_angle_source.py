@@ -40,6 +40,8 @@ class SensorAngleSource:
         self._error: BaseException | None = None
         self._connected = False
         self._last_error: str | None = None
+        self._seq: int | None = None
+        self._timestamp_us: int | None = None
 
     @property
     def connected(self) -> bool:
@@ -68,15 +70,39 @@ class SensorAngleSource:
 
         deadline = time.monotonic() + first_reading_timeout
         while time.monotonic() < deadline:
-            sample = self.latest(max_age_us=100_000)
-            if sample is not None and sample.angle is not None:
+            sample = self.latest()
+            if sample is not None and sample.angle is not None and sample.age_us <= 100_000:
                 return
             if self._stopped.is_set():
                 break
             time.sleep(0.002)
         self.close()
-        detail = self.last_error or "no fresh sensor_1 angle arrived"
+        detail = self._startup_reading_status()
         raise TimeoutError(f"sensor source did not provide a fresh reading: {detail}")
+
+    def _startup_reading_status(self) -> str:
+        with self._lock:
+            sample = self._sample
+            connected = self._connected
+            last_error = self._last_error
+            seq = self._seq
+            timestamp_us = self._timestamp_us
+        seq_text = "none" if seq is None else str(seq)
+        timestamp_text = "none" if timestamp_us is None else str(timestamp_us)
+        if sample is None:
+            state = f"server has not supplied sensor_1; seq={seq_text}, timestamp_us={timestamp_text}"
+        else:
+            age_us = sample.age_us + int(
+                max(0.0, time.monotonic() - sample.received_monotonic) * 1_000_000
+            )
+            if sample.angle is None:
+                state = f"sensor_1 angle is null; age_us={age_us}"
+            elif age_us > 100_000:
+                state = f"sensor_1 reading is stale; age_us={age_us}"
+            else:
+                state = f"sensor_1 reading was not valid; age_us={age_us}"
+        error_text = "none" if not last_error else last_error
+        return f"{state}; connected={connected}; last_error={error_text}"
 
     def latest(self, *, max_age_us: int | None = None) -> SensorAngleSample | None:
         with self._lock:
@@ -139,6 +165,8 @@ class SensorAngleSource:
                 with self._lock:
                     self._connected = connected
                     self._last_error = last_error
+                    self._seq = client.seq
+                    self._timestamp_us = client.timestamp_us
                 if reading is not None:
                     signature = (
                         reading.angle, reading.rad_s, reading.age_us,
