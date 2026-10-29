@@ -8,7 +8,7 @@ from websockets.asyncio.client import connect
 
 
 URI = "ws://127.0.0.1:8765/ws"
-SENSOR_NAME = "sensor_1"
+SENSOR_SELECTION = "*"
 MONITOR_SECONDS = 8.0
 
 
@@ -20,31 +20,34 @@ async def receive_message(websocket, timeout=None):
     return message
 
 
-def report_update(message):
+def merge_update(message, readings, update_counts):
     if message.get("type") != "sensor_data" or message.get("event") != "update":
         return None
-    value = message.get("sensor", {}).get(SENSOR_NAME)
-    if value is None:
-        return None
-    return message.get("seq"), value
+    received_at = time.monotonic()
+    for name, value in message.get("sensor", {}).items():
+        readings[name] = (value, received_at)
+        update_counts[name] = update_counts.get(name, 0) + 1
+    return message.get("seq")
 
 
 async def main():
     async with connect(URI, open_timeout=5) as websocket:
-        await websocket.send(json.dumps({"type": "subscribe", "sensors": [SENSOR_NAME]}))
-        print(f"Subscribed to {SENSOR_NAME}; requesting active measurement.")
+        await websocket.send(json.dumps({"type": "subscribe", "sensors": [SENSOR_SELECTION]}))
+        print("Subscribed to all configured sensors; requesting active measurement.")
         await websocket.send(json.dumps({"type": "start"}))
 
-        latest = None
+        readings = {}
+        update_counts = {}
+        latest_seq = None
         start_deadline = time.monotonic() + 10.0
         while time.monotonic() < start_deadline:
             try:
                 message = await receive_message(websocket, timeout=1.0)
             except TimeoutError:
                 continue
-            update = report_update(message)
-            if update is not None:
-                latest = update
+            update_seq = merge_update(message, readings, update_counts)
+            if update_seq is not None:
+                latest_seq = update_seq
             if message.get("type") == "control" and message.get("status") == "started":
                 print("Received server start acknowledgment; reading the stream directly.")
                 break
@@ -52,7 +55,8 @@ async def main():
             raise TimeoutError("server did not acknowledge the start request")
 
         interval_start = time.monotonic()
-        interval_seq = latest[0] if latest else None
+        interval_seq = latest_seq
+        update_counts.clear()
         end_time = interval_start + MONITOR_SECONDS
 
         while time.monotonic() < end_time:
@@ -63,28 +67,30 @@ async def main():
                 message = None
 
             if message is not None:
-                update = report_update(message)
-                if update is not None:
-                    latest = update
+                update_seq = merge_update(message, readings, update_counts)
+                if update_seq is not None:
+                    latest_seq = update_seq
 
             now = time.monotonic()
             elapsed = now - interval_start
             if elapsed >= 1.0:
-                seq = latest[0] if latest else None
+                seq = latest_seq
                 if seq is None or interval_seq is None:
                     rate = 0.0
                 else:
                     rate = ((seq - interval_seq) & ((1 << 64) - 1)) / elapsed
 
-                if latest is None:
-                    print(f"update_rate={rate:.1f}/s no {SENSOR_NAME} reading")
+                if not readings:
+                    print(f"ws_update_rate={rate:.1f}/s total; no sensor readings yet")
                 else:
-                    _, value = latest
-                    age_ms = value["age_us"] / 1000
-                    print(
-                        f"update_rate={rate:.1f}/s angle={value.get('angle')!r} "
-                        f"rad_s={value.get('rad_s')!r} age={age_ms:.1f} ms"
+                    details = "; ".join(
+                        f"{name}: rate={update_counts.get(name, 0) / elapsed:.1f}/s, "
+                        f"angle={value.get('angle')!r}, rad_s={value.get('rad_s')!r}, "
+                        f"age={(value['age_us'] + int((now - received_at) * 1_000_000)) / 1000:.1f} ms"
+                        for name, (value, received_at) in sorted(readings.items())
                     )
+                    print(f"ws_update_rate={rate:.1f}/s total; {details}")
+                update_counts.clear()
                 interval_start = now
                 interval_seq = seq
 
