@@ -3,6 +3,7 @@
 import asyncio
 import time
 
+import sensor_client
 from sensor_client import SensorClient
 
 
@@ -13,6 +14,7 @@ MONITOR_SECONDS = 8
 async def main() -> None:
     client = SensorClient()
     try:
+        print(f"Loaded sensor_client from: {sensor_client.__file__}")
         await client.subscribe(SENSOR_NAME)
         print('Sending measurement start request: {"type":"start"}')
         await client.start()
