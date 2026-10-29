@@ -26,8 +26,16 @@ def merge_update(message, readings, update_counts):
     received_at = time.monotonic()
     for name, value in message.get("sensor", {}).items():
         readings[name] = (value, received_at)
-        update_counts[name] = update_counts.get(name, 0) + 1
+        if isinstance(value.get("age_us"), int) and value["age_us"] <= 80_000:
+            update_counts[name] = update_counts.get(name, 0) + 1
     return message.get("seq")
+
+
+def print_sensor_payload(message):
+    if message.get("type") == "sensor_data" and message.get("event") == "update":
+        payload = message.get("sensor")
+        if isinstance(payload, dict) and payload:
+            print("raw sensor data:", json.dumps(payload, ensure_ascii=False))
 
 
 async def main():
@@ -39,12 +47,17 @@ async def main():
         readings = {}
         update_counts = {}
         latest_seq = None
+        last_raw_print = 0.0
         start_deadline = time.monotonic() + 10.0
         while time.monotonic() < start_deadline:
             try:
                 message = await receive_message(websocket, timeout=1.0)
             except TimeoutError:
                 continue
+            now = time.monotonic()
+            if now - last_raw_print >= 0.1:
+                print_sensor_payload(message)
+                last_raw_print = now
             update_seq = merge_update(message, readings, update_counts)
             if update_seq is not None:
                 latest_seq = update_seq
@@ -67,6 +80,10 @@ async def main():
                 message = None
 
             if message is not None:
+                now = time.monotonic()
+                if now - last_raw_print >= 0.1:
+                    print_sensor_payload(message)
+                    last_raw_print = now
                 update_seq = merge_update(message, readings, update_counts)
                 if update_seq is not None:
                     latest_seq = update_seq
