@@ -413,7 +413,7 @@ input("With motor power OFF and the pendulum still, press Enter to reset the Ard
 
 current_stage = "opening Arduino /dev/ttyACM0"
 log("START", current_stage)
-arduino = serial.Serial('/dev/ttyACM0', 115200, timeout=0.003,
+arduino = serial.Serial('/dev/serial/by-id/usb-Arduino__www.arduino.cc__0042_75130303735351108111-if00', 115200, timeout=0.003,
                         write_timeout=0.2)
 log("START", "Arduino port open at 115200 baud")
 motor_command_sent = False
