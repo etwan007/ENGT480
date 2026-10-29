@@ -53,7 +53,7 @@ class SensorAngleSource:
         with self._lock:
             return self._last_error
 
-    def start(self, timeout=15.0, first_reading_timeout=5.0) -> None:
+    def start(self, timeout=15.0, first_reading_timeout=5.0, settle_time=0.0) -> None:
         if self._thread is not None:
             raise RuntimeError("sensor source has already been started")
         self._thread = threading.Thread(
@@ -67,6 +67,9 @@ class SensorAngleSource:
             error = self._error
             self.close()
             raise RuntimeError(f"could not start sensor client at {self.uri}: {error}") from error
+
+        if settle_time > 0:
+            time.sleep(settle_time)
 
         deadline = time.monotonic() + first_reading_timeout
         while time.monotonic() < deadline:

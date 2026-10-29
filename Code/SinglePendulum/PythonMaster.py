@@ -476,7 +476,8 @@ log("START", "Cleared old Arduino serial input bytes")
 log("READY", "Keep motor power OFF and pendulum 1 hanging still during sensor calibration")
 current_stage = "connecting SensorClient to sensor_1"
 sensor_source = SensorAngleSource()
-sensor_source.start()
+log("START", "After the server acknowledges sensor start, wait 3 seconds for measurement mode to settle")
+sensor_source.start(settle_time=3.0)
 log("START", f"SensorClient connected to {sensor_source.uri}, subscribed to {sensor_source.sensor_name}")
 current_stage = "calibrating hanging angle from sensor_1"
 automatic_correction = calibrate_from_hanging()
