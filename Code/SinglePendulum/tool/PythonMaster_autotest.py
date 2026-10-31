@@ -12,8 +12,8 @@ from datetime import datetime
 from pathlib import Path
 
 from run_csv_logger import RunCsvLogger
-from angle_packet_fallback import (MissingAnglePacketError, collect_valid_samples,
-                                   estimate_with_angle)
+from Global.angle_packet_fallback import (MissingAnglePacketError, collect_valid_samples,
+                                          estimate_with_angle)
 
 ENCODER_COUNTS = 16384
 HALF_TURN = ENCODER_COUNTS // 2

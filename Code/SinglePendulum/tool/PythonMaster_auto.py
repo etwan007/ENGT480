@@ -14,8 +14,8 @@ from pathlib import Path
 from run_csv_logger import RunCsvLogger
 from Global.angle_protocol import AnglePacketReader, AngleProtocolError, packet_csv_values
 from Global.live_offset_keys import LiveOffsetKeys
-from angle_packet_fallback import (MissingAnglePacketError, collect_valid_samples,
-                                   estimate_with_angle)
+from Global.angle_packet_fallback import (MissingAnglePacketError, collect_valid_samples,
+                                          estimate_with_angle)
 
 ENCODER_COUNTS = 16384
 HALF_TURN = ENCODER_COUNTS // 2
