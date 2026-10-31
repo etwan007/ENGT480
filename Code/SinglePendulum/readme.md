@@ -17,3 +17,9 @@ uv sync --locked
 ```shell
 uv run PythonMaster.py
 ```
+
+## Test Server
+
+```shell
+uv run test_sensor_client.py
+```
