@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "engt480-global"
+version = "0.1.0"
+description = "Shared configuration and utilities for the ENGT480 pendulum controllers"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "numpy>=1.24",
+    "pyserial>=3.5",
+]
+
+[tool.setuptools]
+packages = ["Global"]
+package-dir = { Global = "." }
