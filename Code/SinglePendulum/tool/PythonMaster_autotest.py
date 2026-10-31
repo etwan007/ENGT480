@@ -11,7 +11,7 @@ import json
 from datetime import datetime
 from pathlib import Path
 
-from run_csv_logger import RunCsvLogger
+from Global.run_csv_logger import RunCsvLogger
 from Global.angle_packet_fallback import (MissingAnglePacketError, collect_valid_samples,
                                           estimate_with_angle)
 

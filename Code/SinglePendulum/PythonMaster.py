@@ -12,7 +12,7 @@ from datetime import datetime
 from pathlib import Path
 
 from config import load_config
-from run_csv_logger import RunCsvLogger
+from Global.run_csv_logger import RunCsvLogger
 from Global.live_offset_keys import LiveOffsetKeys
 from Global.angle_packet_fallback import (MissingAnglePacketError, collect_valid_samples,
                                           estimate_with_angle)
