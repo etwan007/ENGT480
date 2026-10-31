@@ -6,3 +6,7 @@ Code/DoublePendulum/run_logs/
 
 # System file
 .DS_Store
+
+# python venv
+.venv
+venv
