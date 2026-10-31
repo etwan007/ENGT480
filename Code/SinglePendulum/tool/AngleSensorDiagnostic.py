@@ -2,7 +2,7 @@
 
 import time
 import serial
-from angle_protocol import AnglePacketReader, AngleProtocolError, VALID, UNKNOWN_AGE
+from Global.angle_protocol import AnglePacketReader, AngleProtocolError, VALID, UNKNOWN_AGE
 
 PORT = '/dev/ttyUSB0'
 BAUD = 921600

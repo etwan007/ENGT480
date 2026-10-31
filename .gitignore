@@ -10,3 +10,7 @@ Code/DoublePendulum/run_logs/
 # python venv
 .venv
 venv
+
+# uv package manager
+
+.uv-cache

@@ -13,7 +13,7 @@ from pathlib import Path
 
 from config import load_config
 from run_csv_logger import RunCsvLogger
-from live_offset_keys import LiveOffsetKeys
+from Global.live_offset_keys import LiveOffsetKeys
 from angle_packet_fallback import (MissingAnglePacketError, collect_valid_samples,
                                    estimate_with_angle)
 from sensor_angle_source import SensorAngleSource

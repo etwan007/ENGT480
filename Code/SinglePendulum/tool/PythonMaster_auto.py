@@ -12,8 +12,8 @@ from datetime import datetime
 from pathlib import Path
 
 from run_csv_logger import RunCsvLogger
-from angle_protocol import AnglePacketReader, AngleProtocolError, packet_csv_values
-from live_offset_keys import LiveOffsetKeys
+from Global.angle_protocol import AnglePacketReader, AngleProtocolError, packet_csv_values
+from Global.live_offset_keys import LiveOffsetKeys
 from angle_packet_fallback import (MissingAnglePacketError, collect_valid_samples,
                                    estimate_with_angle)
 
