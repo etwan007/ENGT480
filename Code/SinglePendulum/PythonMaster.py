@@ -11,12 +11,14 @@ import json
 from datetime import datetime
 from pathlib import Path
 
+from config import load_config
 from run_csv_logger import RunCsvLogger
 from live_offset_keys import LiveOffsetKeys
 from angle_packet_fallback import (MissingAnglePacketError, collect_valid_samples,
                                    estimate_with_angle)
 from sensor_angle_source import SensorAngleSource
 
+CONFIG = load_config()
 SENSOR_MAX_AGE_US = 100_000
 SENSOR_ANGLE_SIGN = 1.0  # Set to -1.0 if sensor_1 positive rotation opposes the controller model.
 TIMESTAMP_MASK = (1 << 64) - 1
@@ -420,11 +422,11 @@ current_stage = "waiting for hanging pendulum and motor power off"
 log("READY", "Turn motor power OFF. Center the cart; let pendulum 1 hang still")
 input("With motor power OFF and the pendulum still, press Enter to reset the Arduino: ")
 
-current_stage = "opening Arduino /dev/ttyACM0"
+current_stage = f"opening Arduino {CONFIG.motor_serial}"
 log("START", current_stage)
-arduino = serial.Serial('/dev/serial/by-id/usb-Arduino__www.arduino.cc__0042_75130303735351108111-if00', 115200, timeout=0.003,
+arduino = serial.Serial(CONFIG.motor_serial, CONFIG.motor_baudrate, timeout=0.003,
                         write_timeout=0.2)
-log("START", "Arduino port open at 115200 baud")
+log("START", f"Arduino port open at {CONFIG.motor_baudrate} baud")
 motor_command_sent = False
 
 def stop_and_close():
@@ -475,7 +477,7 @@ log("START", "Cleared old Arduino serial input bytes")
 
 log("READY", "Keep motor power OFF and pendulum 1 hanging still during sensor calibration")
 current_stage = "connecting SensorClient to sensor_1"
-sensor_source = SensorAngleSource()
+sensor_source = SensorAngleSource(uri=CONFIG.sensor_ws_url)
 log("START", "After the server acknowledges sensor start, wait 3 seconds for measurement mode to settle")
 sensor_source.start(settle_time=3.0)
 log("START", f"SensorClient connected to {sensor_source.uri}, subscribed to {sensor_source.sensor_name}")

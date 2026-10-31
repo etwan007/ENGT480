@@ -1,0 +1,6 @@
+[motor]
+version = "serial_legacy"
+serial = "/dev/serial/by-id/usb-Arduino__www.arduino.cc__0042_75130303735351108111-if00"
+
+[sensor_ws]
+ws = "ws://127.0.0.1:8765/ws"
