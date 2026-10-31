@@ -2,14 +2,13 @@
 name = "engt480-single-pendulum"
 version = "0.1.0"
 description = "Single-pendulum balancing controller and Sensor Server client"
-requires-python = ">=3.10"
+requires-python = ">=3.12"
 dependencies = [
     "control>=0.10.2",
     "engt480-global",
     "numpy>=1.24",
     "pyserial>=3.5",
     "sympy>=1.12",
-    "tomli>=2.0.1; python_version < '3.11'",
     "websockets>=13",
 ]
 

@@ -6,14 +6,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-try:
-    import tomllib
-except ModuleNotFoundError:  # Python 3.10
-    import tomli as tomllib
-
+import tomllib
 
 DEFAULT_CONFIG_PATH = Path(__file__).resolve().parent.parent / "hardware_info.toml"
-
 
 class ConfigError(ValueError):
     """Raised when hardware_info.toml is missing or has invalid values."""
