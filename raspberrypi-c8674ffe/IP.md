@@ -1,6 +1,6 @@
 # Raspberry Pi IP address
 
-- Local IPv4: `10.186.82.23`
+- Local IPv4: `10.186.95.206`
 - Hostname: `engt-2026-team-28`
 - Interface: `wlan0`
-- Boot ID: `9e785b96-8a3e-4a5b-a08f-b55d6c58ae12`
+- Boot ID: `6ec43dbf-d11f-471e-baf4-94aa8f8dd0d1`
