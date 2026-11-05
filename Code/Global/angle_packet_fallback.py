@@ -9,7 +9,7 @@ class MissingAnglePacketError(RuntimeError):
 
 
 def collect_valid_samples(read_sample, count, *, interval_s=0.02,
-                          max_total_misses=5, max_consecutive_misses=1):
+                          max_total_misses=10, max_consecutive_misses=10):
     """Collect setup readings; stop when either allowed miss count is exceeded."""
     for name, limit in (("max_total_misses", max_total_misses),
                         ("max_consecutive_misses", max_consecutive_misses)):
@@ -26,10 +26,10 @@ def collect_valid_samples(read_sample, count, *, interval_s=0.02,
             consecutive_misses += 1
             if consecutive_misses > max_consecutive_misses:
                 raise RuntimeError(
-                    f"{consecutive_misses} consecutive ESP32 angle packets were unusable "
+                    f"{consecutive_misses} consecutive angle readings were unusable "
                     f"during setup (allowed {max_consecutive_misses})") from exc
             if misses > max_total_misses:
-                raise RuntimeError(f"Too many unusable ESP32 angle packets during setup ({misses})") from exc
+                raise RuntimeError(f"Too many unusable angle readings during setup ({misses})") from exc
         else:
             samples.append(sample)
             consecutive_misses = 0
@@ -43,8 +43,8 @@ def estimate_with_angle(predicted, measured_angle, cart_m, observation_matrix,
     """Return the next state, angle to report, and consecutive miss count."""
     if measured_angle is None:
         consecutive_misses += 1
-        if consecutive_misses >= 2:
-            raise RuntimeError("Two consecutive ESP32 angle packets were unusable; stopping motor")
+        if consecutive_misses >= 10:
+            raise RuntimeError("Ten consecutive angle readings were unusable; stopping motor")
         measured_angle = float(predicted[0, 0])
     else:
         consecutive_misses = 0

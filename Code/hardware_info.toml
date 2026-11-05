@@ -1,0 +1,16 @@
+# This config file define what hardware is running currently
+
+[motor]
+connect_type = "serial_legacy"
+
+[motor.serial_legacy]
+serial = "/dev/serial/by-id/usb-Arduino__www.arduino.cc__0042_75130303735351108111-if00"
+
+[sensor]
+connect_type = "websocket"
+
+[sensor.serial_legacy]
+serial = "/dev/serial/by-id/"
+
+[sensor.websocket]
+websocket = "ws://127.0.0.1:8765/ws"

@@ -1,0 +1,83 @@
+"""Load and validate the SinglePendulum hardware configuration."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any
+
+import tomllib
+
+DEFAULT_CONFIG_PATH = Path(__file__).resolve().parent.parent / "hardware_info.toml"
+
+class ConfigError(ValueError):
+    """Raised when hardware_info.toml is missing or has invalid values."""
+
+
+@dataclass(frozen=True, slots=True)
+class AppConfig:
+    motor_serial: str
+    motor_baudrate: int
+    sensor_ws_url: str
+
+
+def _section(data: dict[str, Any], name: str, path: Path) -> dict[str, Any]:
+    value = data.get(name)
+    if not isinstance(value, dict):
+        raise ConfigError(f"{path}: expected a [{name}] table")
+    return value
+
+
+def _required_string(section: dict[str, Any], key: str, table: str, path: Path) -> str:
+    value = section.get(key)
+    if not isinstance(value, str) or not value.strip():
+        raise ConfigError(f'{path}: [{table}].{key} must be a non-empty string')
+    return value.strip()
+
+
+def _connect_type(section: dict[str, Any], table: str, supported: str, path: Path) -> None:
+    value = section.get("connect_type")
+    if value != supported:
+        selected = repr(value) if value is not None else "missing"
+        raise ConfigError(
+            f"{path}: [{table}].connect_type={selected} not support; "
+            f"supported value: {supported!r}"
+        )
+
+
+def load_config(path: str | Path = DEFAULT_CONFIG_PATH) -> AppConfig:
+    """Read the hardware config; paths are independent of the current directory."""
+    config_path = Path(path).expanduser().resolve()
+    try:
+        with config_path.open("rb") as config_file:
+            data = tomllib.load(config_file)
+    except FileNotFoundError as exc:
+        raise ConfigError(f"hardware config file not found: {config_path}") from exc
+    except tomllib.TOMLDecodeError as exc:
+        raise ConfigError(f"invalid TOML in {config_path}: {exc}") from exc
+
+    motor = _section(data, "motor", config_path)
+    sensor = _section(data, "sensor", config_path)
+    _connect_type(motor, "motor", "serial_legacy", config_path)
+    _connect_type(sensor, "sensor", "websocket", config_path)
+
+    motor_serial = _section(motor, "serial_legacy", config_path)
+    sensor_websocket = _section(sensor, "websocket", config_path)
+    serial_port = _required_string(
+        motor_serial, "serial", "motor.serial_legacy", config_path
+    )
+    sensor_ws_url = _required_string(
+        sensor_websocket, "websocket", "sensor.websocket", config_path
+    )
+
+    baudrate = motor_serial.get("baudrate", 115200)
+    if isinstance(baudrate, bool) or not isinstance(baudrate, int) or baudrate <= 0:
+        raise ConfigError(
+            f"{config_path}: [motor.serial_legacy].baudrate must be a positive integer"
+        )
+
+    return AppConfig(
+        motor_serial=serial_port,
+        motor_baudrate=baudrate,
+        sensor_ws_url=sensor_ws_url,
+    )
