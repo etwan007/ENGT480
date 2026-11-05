@@ -6,12 +6,13 @@ import asyncio
 from dataclasses import dataclass
 import threading
 import time
+from collections.abc import Sequence
 
-from sensor_client import SensorClient, SensorReading
+from Global.sensor_client import SensorClient, SensorReading
 
 
 DEFAULT_SENSOR_URI = "ws://127.0.0.1:8765/ws"
-SENSOR_NAME = "sensor_1"
+DEFAULT_SENSORS = ("sensor_1",)
 
 
 @dataclass(frozen=True, slots=True)
@@ -27,11 +28,15 @@ class SensorAngleSample:
 class SensorAngleSource:
     """Run SensorClient on a private asyncio thread and expose fresh snapshots."""
 
-    def __init__(self, uri=DEFAULT_SENSOR_URI, sensor_name=SENSOR_NAME):
+    def __init__(self, uri=DEFAULT_SENSOR_URI, sensors: Sequence[str] | str = DEFAULT_SENSORS):
+        if isinstance(sensors, str):
+            sensors = (sensors,)
+        if not sensors or any(not isinstance(name, str) or not name for name in sensors):
+            raise ValueError("sensors must contain one or more non-empty names")
         self.uri = uri
-        self.sensor_name = sensor_name
+        self.sensors = tuple(dict.fromkeys(sensors))
         self._lock = threading.Lock()
-        self._sample: SensorAngleSample | None = None
+        self._samples: dict[str, SensorAngleSample] = {}
         self._ready = threading.Event()
         self._stopped = threading.Event()
         self._stop_requested = threading.Event()
@@ -40,8 +45,13 @@ class SensorAngleSource:
         self._error: BaseException | None = None
         self._connected = False
         self._last_error: str | None = None
-        self._seq: int | None = None
-        self._timestamp_us: int | None = None
+
+    @property
+    def sensor_name(self) -> str:
+        """Return the only configured sensor name for single-sensor callers."""
+        if len(self.sensors) != 1:
+            raise ValueError("sensor_name is only available when one sensor is configured")
+        return self.sensors[0]
 
     @property
     def connected(self) -> bool:
@@ -73,8 +83,7 @@ class SensorAngleSource:
 
         deadline = time.monotonic() + first_reading_timeout
         while time.monotonic() < deadline:
-            sample = self.latest()
-            if sample is not None and sample.angle is not None and sample.age_us <= 100_000:
+            if self._has_fresh_readings():
                 return
             if self._stopped.is_set():
                 break
@@ -85,31 +94,45 @@ class SensorAngleSource:
 
     def _startup_reading_status(self) -> str:
         with self._lock:
-            sample = self._sample
+            samples = dict(self._samples)
             connected = self._connected
             last_error = self._last_error
-            seq = self._seq
-            timestamp_us = self._timestamp_us
-        seq_text = "none" if seq is None else str(seq)
-        timestamp_text = "none" if timestamp_us is None else str(timestamp_us)
-        if sample is None:
-            state = f"server has not supplied sensor_1; seq={seq_text}, timestamp_us={timestamp_text}"
-        else:
-            age_us = sample.age_us + int(
-                max(0.0, time.monotonic() - sample.received_monotonic) * 1_000_000
-            )
+        statuses = []
+        names = samples.keys() if self.sensors == ("*",) else self.sensors
+        for name in names:
+            sample = samples.get(name)
+            if sample is None:
+                statuses.append(f"server has not supplied {name}")
+                continue
+            age_us = sample.age_us + int(max(
+                0.0, time.monotonic() - sample.received_monotonic
+            ) * 1_000_000)
             if sample.angle is None:
-                state = f"sensor_1 angle is null; age_us={age_us}"
+                statuses.append(f"{name} angle is null; age_us={age_us}")
             elif age_us > 100_000:
-                state = f"sensor_1 reading is stale; age_us={age_us}"
-            else:
-                state = f"sensor_1 reading was not valid; age_us={age_us}"
+                statuses.append(f"{name} reading is stale; age_us={age_us}")
+        state = "; ".join(statuses) if statuses else "no fresh sensor readings"
         error_text = "none" if not last_error else last_error
         return f"{state}; connected={connected}; last_error={error_text}"
 
-    def latest(self, *, max_age_us: int | None = None) -> SensorAngleSample | None:
+    def _has_fresh_readings(self) -> bool:
+        names = self.sensors
+        if names == ("*",):
+            with self._lock:
+                names = tuple(self._samples)
+        return bool(names) and all(
+            (sample := self.latest(name, max_age_us=100_000)) is not None
+            and sample.angle is not None
+            for name in names
+        )
+
+    def latest(
+        self, sensor_name: str | None = None, *, max_age_us: int | None = None
+    ) -> SensorAngleSample | None:
+        if sensor_name is None:
+            sensor_name = self.sensor_name
         with self._lock:
-            sample = self._sample
+            sample = self._samples.get(sensor_name)
         if sample is None:
             return None
         age_us = sample.age_us + int(max(0.0, time.monotonic() - sample.received_monotonic) * 1_000_000)
@@ -142,10 +165,10 @@ class SensorAngleSource:
             self._stopped.set()
 
     async def _serve(self) -> None:
-        client = SensorClient(uri=self.uri)
+        client = SensorClient(uri=self.uri, sensors=self.sensors)
         try:
             try:
-                await asyncio.wait_for(client.subscribe(self.sensor_name), timeout=10.0)
+                await asyncio.wait_for(client.wait_connected(), timeout=10.0)
             except TimeoutError as error:
                 detail = client.last_error or "no WebSocket connection was established"
                 raise TimeoutError(
@@ -160,29 +183,28 @@ class SensorAngleSource:
                     f"start request timed out after 10s: {detail}"
                 ) from error
             self._ready.set()
-            last_signature = None
+            last_signatures: dict[str, tuple] = {}
             while not self._stop_requested.is_set():
-                reading: SensorReading | None = client.sensors.get(self.sensor_name)
                 connected = client.connected
                 last_error = client.last_error
                 with self._lock:
                     self._connected = connected
                     self._last_error = last_error
-                    self._seq = client.seq
-                    self._timestamp_us = client.timestamp_us
-                if reading is not None:
+                for sensor_name, reading in client.sensors.items():
+                    if not isinstance(reading, SensorReading):
+                        continue
                     signature = (
                         reading.angle, reading.rad_s, reading.age_us,
                         client.seq, client.timestamp_us,
                     )
-                    if signature != last_signature:
+                    if signature != last_signatures.get(sensor_name):
                         snapshot = SensorAngleSample(
                             reading.angle, reading.rad_s, reading.age_us,
                             client.seq, client.timestamp_us, time.monotonic(),
                         )
                         with self._lock:
-                            self._sample = snapshot
-                        last_signature = signature
+                            self._samples[sensor_name] = snapshot
+                        last_signatures[sensor_name] = signature
                 await asyncio.sleep(0.001)
         except BaseException as error:
             self._error = error

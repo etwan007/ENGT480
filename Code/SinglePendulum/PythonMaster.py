@@ -16,9 +16,11 @@ from Global.run_csv_logger import RunCsvLogger
 from Global.live_offset_keys import LiveOffsetKeys
 from Global.angle_packet_fallback import (MissingAnglePacketError, collect_valid_samples,
                                           estimate_with_angle)
-from sensor_angle_source import SensorAngleSource
+from Global.sensor_angle_source import SensorAngleSource
 
 CONFIG = load_config()
+SENSOR_NAMES = ("sensor_1",)
+SENSOR_NAME = SENSOR_NAMES[0]
 SENSOR_MAX_AGE_US = 100_000
 SENSOR_ANGLE_SIGN = 1.0  # Set to -1.0 if sensor_1 positive rotation opposes the controller model.
 TIMESTAMP_MASK = (1 << 64) - 1
@@ -107,9 +109,9 @@ def read_sensor1_angle():
     global latest_raw_angle, latest_sensor_sample
     global latest_angle_message
     latest_angle_message = ""
-    sample = sensor_source.latest(max_age_us=SENSOR_MAX_AGE_US)
+    sample = sensor_source.latest(SENSOR_NAME, max_age_us=SENSOR_MAX_AGE_US)
     if sample is None or sample.angle is None:
-        age_sample = sensor_source.latest()
+        age_sample = sensor_source.latest(SENSOR_NAME)
         latest_sensor_sample = age_sample
         if age_sample is None:
             sequence_text = "none"
@@ -477,10 +479,10 @@ log("START", "Cleared old Arduino serial input bytes")
 
 log("READY", "Keep motor power OFF and pendulum 1 hanging still during sensor calibration")
 current_stage = "connecting SensorClient to sensor_1"
-sensor_source = SensorAngleSource(uri=CONFIG.sensor_ws_url)
+sensor_source = SensorAngleSource(uri=CONFIG.sensor_ws_url, sensors=SENSOR_NAMES)
 log("START", "After the server acknowledges sensor start, wait 3 seconds for measurement mode to settle")
 sensor_source.start(settle_time=3.0)
-log("START", f"SensorClient connected to {sensor_source.uri}, subscribed to {sensor_source.sensor_name}")
+log("START", f"SensorClient connected to {sensor_source.uri}, subscribed to {', '.join(SENSOR_NAMES)}")
 current_stage = "calibrating hanging angle from sensor_1"
 automatic_correction = calibrate_from_hanging()
 correction = wrap_angle(automatic_correction + np.deg2rad(UPRIGHT_OFFSET_DEG))
@@ -494,7 +496,8 @@ if SAVE_RUN_CSV:
     run_logger = new_logger
     run_logger.event("config", json.dumps({
         "schema_version": 3, "sensor_api": "Sensor Server WebSocket", "sample_period_s": Ts,
-        "sensor_name": sensor_source.sensor_name, "sensor_uri": sensor_source.uri,
+        "sensor_name": SENSOR_NAME, "sensor_names": list(SENSOR_NAMES),
+        "sensor_uri": sensor_source.uri,
         "sensor_angle_sign": SENSOR_ANGLE_SIGN,
         "pendulum_length_m": length, "center_of_mass_m": lval,
         "pendulum_inertia_kg_m2": Ival, "pendulum_mass_kg": m1val,

@@ -3,8 +3,8 @@
 import asyncio
 import time
 
-import sensor_client
-from sensor_client import SensorClient
+from Global import sensor_client
+from Global.sensor_client import SensorClient
 
 
 SENSOR_NAME = "sensor_1"

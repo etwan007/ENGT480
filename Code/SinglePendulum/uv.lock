@@ -112,12 +112,14 @@ source = { editable = "../Global" }
 dependencies = [
     { name = "numpy" },
     { name = "pyserial" },
+    { name = "websockets" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "numpy", specifier = ">=1.24" },
     { name = "pyserial", specifier = ">=3.5" },
+    { name = "websockets", specifier = ">=13" },
 ]
 
 [[package]]
