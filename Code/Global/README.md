@@ -12,6 +12,8 @@ Code/
     angle_protocol.py
     angle_packet_fallback.py
     live_offset_keys.py
+    sensor_angle_source.py
+    sensor_client/
     AngleSensorDiagnostic.py
   SinglePendulum/
     PythonMaster_auto.py
@@ -50,6 +52,9 @@ Encoder resolution must remain compatible with the receiver firmware.
 - `angle_protocol.py`: framed serial packet reader, validation and diagnostics.
 - `angle_packet_fallback.py`: setup sample collection and single-arm prediction.
 - `live_offset_keys.py`: nonblocking keyboard offset input.
+- `sensor_client/`: asynchronous WebSocket client for Sensor Server.
+- `sensor_angle_source.py`: synchronous bridge for controller loops, with an
+  explicit list of subscribed sensor names.
 - `AngleSensorDiagnostic.py`: receiver-only diagnostic for every arm channel.
 
 Run diagnostics from the repository root with
@@ -71,6 +76,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from Global.physical_parameters import DOUBLE_ARM_1
 from Global.run_csv_logger import RunCsvLogger
 from Global.angle_protocol import AnglePacketReader
+from Global.sensor_angle_source import SensorAngleSource
+
+SENSOR_NAMES = ("sensor_1", "sensor_2")
+sensor_source = SensorAngleSource(uri="ws://127.0.0.1:8765/ws", sensors=SENSOR_NAMES)
+sensor_source.start()
+sensor_1 = sensor_source.latest("sensor_1")
 ```
 
 Additional shared helpers belong here; use relative imports between package files.
