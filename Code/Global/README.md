@@ -66,13 +66,18 @@ Swing-up control and double-arm matrices stay with the setup that uses them.
 
 ## Use this package in a new controller
 
+Use uv add package
+
+```shell
+uv add engt480-global --editable ../Global
+```
+
 For a script in `Code/<setup>/`, add the parent `Code` directory to its import path:
 
 ```python
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from Global.physical_parameters import DOUBLE_ARM_1
 from Global.run_csv_logger import RunCsvLogger
 from Global.angle_protocol import AnglePacketReader
