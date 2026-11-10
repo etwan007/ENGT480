@@ -1,2 +1,6 @@
+# toolchain
 .pio
 .vscode
+
+# config
+src/config.hpp
