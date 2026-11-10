@@ -10,7 +10,7 @@ pio_environment="seeed_xiao_esp32c3"
 pio_build_dir="$project_dir/.pio/build/$pio_environment"
 
 if ! command -v pio >/dev/null 2>&1; then
-    echo "Error: PlatformIO CLI (pio) is not installed or not on PATH." >&2
+    echo "❌ Error: PlatformIO CLI (pio) is not installed or not on PATH." >&2
     exit 1
 fi
 
@@ -21,7 +21,7 @@ build_transmitter() {
     local config_file="$project_dir/src/config.$transmitter_id.hpp"
 
     if [[ ! -f "$config_file" ]]; then
-        echo "Error: Configuration file not found: $config_file" >&2
+        echo "❌ Error: Configuration file not found: $config_file" >&2
         exit 1
     fi
 
@@ -29,7 +29,7 @@ build_transmitter() {
     (cd "$project_dir" && pio run --environment "$pio_environment")
 
     if [[ ! -f "$pio_build_dir/firmware.bin" ]]; then
-        echo "Error: PlatformIO did not produce $pio_build_dir/firmware.bin" >&2
+        echo "❌ Error: PlatformIO did not produce $pio_build_dir/firmware.bin" >&2
         exit 1
     fi
 
@@ -47,4 +47,4 @@ build_transmitter() {
 build_transmitter tx1
 build_transmitter tx2
 
-echo "Firmware images are available in $build_dir."
+echo "✅ Firmware images are available in $build_dir."
