@@ -168,7 +168,7 @@ class SensorAngleSource:
         client = SensorClient(uri=self.uri, sensors=self.sensors)
         try:
             try:
-                await asyncio.wait_for(client.wait_connected(), timeout=10.0)
+                await asyncio.wait_for(client.subscribe(self.sensors), timeout=10.0)
             except TimeoutError as error:
                 detail = client.last_error or "no WebSocket connection was established"
                 raise TimeoutError(
