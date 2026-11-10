@@ -13,3 +13,6 @@ venv
 
 # uv package manager
 .uv-cache
+
+# build
+.build
