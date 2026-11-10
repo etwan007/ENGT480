@@ -12,5 +12,4 @@ Code/DoublePendulum/run_logs/
 venv
 
 # uv package manager
-
 .uv-cache
