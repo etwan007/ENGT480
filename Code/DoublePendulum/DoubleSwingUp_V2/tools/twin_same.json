@@ -1,0 +1,1613 @@
+[
+ {
+  "plan": "same_3.0s",
+  "case": "nominal",
+  "seed": 2,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 2 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_3.0s",
+  "case": "nominal",
+  "seed": 3,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 2 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_3.0s",
+  "case": "arm2 mass +4%",
+  "seed": 1,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 2 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_3.0s",
+  "case": "nominal",
+  "seed": 1,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 2 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_3.0s",
+  "case": "arm2 mass +4%",
+  "seed": 2,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 2 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_3.0s",
+  "case": "arm2 mass -4%",
+  "seed": 1,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 2 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_3.0s",
+  "case": "arm2 mass -4%",
+  "seed": 2,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 2 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_3.0s",
+  "case": "arm2 mass +4%",
+  "seed": 3,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 2 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_3.0s",
+  "case": "arm2 mass -4%",
+  "seed": 3,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 2 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_3.0s",
+  "case": "arm2 I +10%",
+  "seed": 2,
+  "attempts": 2,
+  "catches": 0,
+  "lost": 0,
+  "balanced_at_end": false,
+  "first_try": false,
+  "aborts": [
+   [
+    "38 deg off the plan",
+    "2.38"
+   ],
+   [
+    "37 deg off the plan",
+    "2.37"
+   ]
+  ],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 2 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_3.0s",
+  "case": "arm2 I +10%",
+  "seed": 3,
+  "attempts": 2,
+  "catches": 0,
+  "lost": 0,
+  "balanced_at_end": false,
+  "first_try": false,
+  "aborts": [
+   [
+    "37 deg off the plan",
+    "2.38"
+   ],
+   [
+    "38 deg off the plan",
+    "2.38"
+   ]
+  ],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 2 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_3.0s",
+  "case": "arm2 I +10%",
+  "seed": 1,
+  "attempts": 2,
+  "catches": 0,
+  "lost": 0,
+  "balanced_at_end": false,
+  "first_try": false,
+  "aborts": [
+   [
+    "37 deg off the plan",
+    "2.38"
+   ],
+   [
+    "36 deg off the plan",
+    "2.37"
+   ]
+  ],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 2 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_3.0s",
+  "case": "arm2 I -10%",
+  "seed": 1,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 2 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_3.0s",
+  "case": "arm2 I -10%",
+  "seed": 2,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 2 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_3.0s",
+  "case": "arm2 I -10%",
+  "seed": 3,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 2 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_3.0s",
+  "case": "arm1 I +10%",
+  "seed": 1,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 2 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_3.0s",
+  "case": "arm1 I +10%",
+  "seed": 3,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 2 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_3.0s",
+  "case": "arm1 I +10%",
+  "seed": 2,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 2 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_3.0s",
+  "case": "arm2 CoM +3%",
+  "seed": 1,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 2 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_3.0s",
+  "case": "arm2 CoM +3%",
+  "seed": 2,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 2 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_3.0s",
+  "case": "arm2 CoM +3%",
+  "seed": 3,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 2 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_3.0s",
+  "case": "joint friction x3",
+  "seed": 1,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 2 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_3.0s",
+  "case": "joint friction x3",
+  "seed": 2,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 2 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_3.0s",
+  "case": "joint friction x3",
+  "seed": 3,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 2 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_3.0s",
+  "case": "pivot friction x3",
+  "seed": 2,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 2 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_3.0s",
+  "case": "pivot friction x3",
+  "seed": 1,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 2 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_3.0s",
+  "case": "pivot friction x3",
+  "seed": 3,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 2 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_3.0s",
+  "case": "TX2 on slot 3",
+  "seed": 1,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 3 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_3.0s",
+  "case": "TX2 on slot 3",
+  "seed": 3,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 3 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_3.0s",
+  "case": "TX2 on slot 3",
+  "seed": 2,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 3 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_3.0s",
+  "case": "radio loss 2% + 3 ms",
+  "seed": 1,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 2 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_3.0s",
+  "case": "radio loss 2% + 3 ms",
+  "seed": 2,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 3 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_3.0s",
+  "case": "radio loss 2% + 3 ms",
+  "seed": 3,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 3 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_3.5s",
+  "case": "nominal",
+  "seed": 2,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 2 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_3.5s",
+  "case": "nominal",
+  "seed": 1,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 3 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_3.5s",
+  "case": "nominal",
+  "seed": 3,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 3 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_3.5s",
+  "case": "arm2 mass +4%",
+  "seed": 1,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 3 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_3.5s",
+  "case": "arm2 mass +4%",
+  "seed": 2,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 2 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_3.5s",
+  "case": "arm2 mass +4%",
+  "seed": 3,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 3 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_3.5s",
+  "case": "arm2 mass -4%",
+  "seed": 1,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 3 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_3.5s",
+  "case": "arm2 mass -4%",
+  "seed": 2,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 3 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_3.5s",
+  "case": "arm2 mass -4%",
+  "seed": 3,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 2 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_3.5s",
+  "case": "arm2 I +10%",
+  "seed": 1,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 3 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_3.5s",
+  "case": "arm2 I +10%",
+  "seed": 2,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 3 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_3.5s",
+  "case": "arm2 I +10%",
+  "seed": 3,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 3 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_3.5s",
+  "case": "arm2 I -10%",
+  "seed": 1,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 2 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_3.5s",
+  "case": "arm2 I -10%",
+  "seed": 2,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 3 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_3.5s",
+  "case": "arm2 I -10%",
+  "seed": 3,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 3 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_3.5s",
+  "case": "arm1 I +10%",
+  "seed": 1,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 3 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_3.5s",
+  "case": "arm1 I +10%",
+  "seed": 2,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 2 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_3.5s",
+  "case": "arm1 I +10%",
+  "seed": 3,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 3 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_3.5s",
+  "case": "arm2 CoM +3%",
+  "seed": 1,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 3 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_3.5s",
+  "case": "arm2 CoM +3%",
+  "seed": 3,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 2 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_3.5s",
+  "case": "arm2 CoM +3%",
+  "seed": 2,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 3 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_3.5s",
+  "case": "joint friction x3",
+  "seed": 1,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 3 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_3.5s",
+  "case": "joint friction x3",
+  "seed": 2,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 3 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_3.5s",
+  "case": "joint friction x3",
+  "seed": 3,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 2 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_3.5s",
+  "case": "pivot friction x3",
+  "seed": 1,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 3 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_3.5s",
+  "case": "pivot friction x3",
+  "seed": 2,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 3 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_3.5s",
+  "case": "pivot friction x3",
+  "seed": 3,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 3 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_3.5s",
+  "case": "TX2 on slot 3",
+  "seed": 1,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 3 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_3.5s",
+  "case": "TX2 on slot 3",
+  "seed": 2,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 2 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_3.5s",
+  "case": "TX2 on slot 3",
+  "seed": 3,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 2 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_3.5s",
+  "case": "radio loss 2% + 3 ms",
+  "seed": 1,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 3 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_3.5s",
+  "case": "radio loss 2% + 3 ms",
+  "seed": 2,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 3 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_3.5s",
+  "case": "radio loss 2% + 3 ms",
+  "seed": 3,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 2 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_4.0s",
+  "case": "nominal",
+  "seed": 1,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 2 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_4.0s",
+  "case": "nominal",
+  "seed": 2,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 3 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_4.0s",
+  "case": "nominal",
+  "seed": 3,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 3 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_4.0s",
+  "case": "arm2 mass +4%",
+  "seed": 1,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 2 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_4.0s",
+  "case": "arm2 mass +4%",
+  "seed": 2,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 2 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_4.0s",
+  "case": "arm2 mass +4%",
+  "seed": 3,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 3 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_4.0s",
+  "case": "arm2 mass -4%",
+  "seed": 1,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 3 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_4.0s",
+  "case": "arm2 mass -4%",
+  "seed": 2,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 2 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_4.0s",
+  "case": "arm2 mass -4%",
+  "seed": 3,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 2 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_4.0s",
+  "case": "arm2 I +10%",
+  "seed": 1,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 3 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_4.0s",
+  "case": "arm2 I -10%",
+  "seed": 1,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 2 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_4.0s",
+  "case": "arm2 I +10%",
+  "seed": 2,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 3 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_4.0s",
+  "case": "arm2 I +10%",
+  "seed": 3,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 2 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_4.0s",
+  "case": "arm2 I -10%",
+  "seed": 2,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 3 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_4.0s",
+  "case": "arm2 I -10%",
+  "seed": 3,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 2 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_4.0s",
+  "case": "arm1 I +10%",
+  "seed": 1,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 3 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_4.0s",
+  "case": "arm1 I +10%",
+  "seed": 2,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 2 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_4.0s",
+  "case": "arm1 I +10%",
+  "seed": 3,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 3 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_4.0s",
+  "case": "arm2 CoM +3%",
+  "seed": 1,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 2 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_4.0s",
+  "case": "arm2 CoM +3%",
+  "seed": 2,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 3 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_4.0s",
+  "case": "arm2 CoM +3%",
+  "seed": 3,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 2 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_4.0s",
+  "case": "joint friction x3",
+  "seed": 1,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 3 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_4.0s",
+  "case": "joint friction x3",
+  "seed": 2,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 2 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_4.0s",
+  "case": "pivot friction x3",
+  "seed": 1,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 2 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_4.0s",
+  "case": "joint friction x3",
+  "seed": 3,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 3 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_4.0s",
+  "case": "pivot friction x3",
+  "seed": 2,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 3 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_4.0s",
+  "case": "pivot friction x3",
+  "seed": 3,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 2 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_4.0s",
+  "case": "TX2 on slot 3",
+  "seed": 2,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 2 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_4.0s",
+  "case": "TX2 on slot 3",
+  "seed": 1,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 3 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_4.0s",
+  "case": "TX2 on slot 3",
+  "seed": 3,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 2 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_4.0s",
+  "case": "radio loss 2% + 3 ms",
+  "seed": 1,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 2 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_4.0s",
+  "case": "radio loss 2% + 3 ms",
+  "seed": 3,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 3 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ },
+ {
+  "plan": "same_4.0s",
+  "case": "radio loss 2% + 3 ms",
+  "seed": 2,
+  "attempts": 1,
+  "catches": 1,
+  "lost": 0,
+  "balanced_at_end": true,
+  "first_try": true,
+  "aborts": [],
+  "faults": [],
+  "slot": [
+   "joint encoder (arm 2) found on receiver slot 2 (ARM2_CHANNEL = auto)"
+  ],
+  "status": "finished"
+ }
+]
