@@ -44,7 +44,10 @@ build_transmitter() {
     done
 }
 
+echo "📦 Start Build TX1"
 build_transmitter tx1
+
+echo "📦 Start Build TX2"
 build_transmitter tx2
 
 echo "✅ Firmware images are available in $build_dir."
