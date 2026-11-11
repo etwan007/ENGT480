@@ -1,0 +1,62 @@
+# wiki build and deploy 
+
+name: ENGT-docs-build-workflow
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'engt-docs/**'
+
+jobs:
+  build:
+    name: Build ENGT Project Docs
+    
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: engt-docs
+    
+    steps:
+    - uses: actions/checkout@v6
+
+    - name: Enable Corepack
+      run: corepack enable
+    
+    - name: Setup Environment
+      uses: actions/setup-node@v6
+      with:
+        node-version: '24.x'
+        cache: pnpm
+        cache-dependency-path: engt-docs/pnpm-lock.yaml
+        
+    - name: Install dependencies
+      run: pnpm install --frozen-lockfile
+      
+    - name: build wiki 
+      run: pnpm build
+
+    - name: Upload Build Artifact
+      uses: actions/upload-pages-artifact@v5
+      with:
+        path: engt-docs/build
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+
+    permissions:
+      pages: write # to deploy to Pages
+      id-token: write # to verify the deployment originates from an appropriate source
+
+    # Deploy to the github-pages environment
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5
