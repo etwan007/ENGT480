@@ -4,10 +4,12 @@ version = "0.1.0"
 description = "Double-pendulum swing-up and balancing controller"
 requires-python = ">=3.12"
 dependencies = [
+    "control>=0.10.2",
     "engt480-global",
     "numpy>=1.24",
     "pyserial>=3.5",
-    "scipy>=1.10",
+    "sympy>=1.12",
+    "websockets>=13",
 ]
 
 [tool.uv]
