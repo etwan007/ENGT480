@@ -3,4 +3,4 @@
 - Local IPv4: `10.186.80.71`
 - Hostname: `engt-2026-team-28`
 - Interface: `wlan0`
-- Boot ID: `b23ccea9-3bee-4608-b4b9-bff41eb70ebd`
+- Boot ID: `6f273c6c-542a-48e1-9e00-2f61e6e0de5c`
