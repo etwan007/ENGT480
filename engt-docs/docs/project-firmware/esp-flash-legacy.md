@@ -10,8 +10,10 @@ This procedure builds and flashes the legacy wireless transmitter firmware used 
 
 The firmware source is in [`Code/Wireless/Transmitters/`](https://github.com/etwan007/ENGT480/tree/main/Code/Wireless/Transmitters). The repository scripts build both transmitter images and flash one selected sensor at a time.
 
-:::warning Legacy firmware
+:::warning[Legacy firmware]
+
 This page documents the retained ESP-NOW transmitter path, which sends the established three-byte angle packet. New software that communicates with Sensor Server should use the shared Sensor Client API. The receiver's newer serial framing does not change the transmitter radio packet, so that receiver update alone does not require reflashing TX1 or TX2. See the [receiver protocol notes](https://github.com/etwan007/ENGT480/blob/main/Code/Wireless/ANGLE_PROTOCOL.md) before changing receiver or controller firmware.
+
 :::
 
 ## Hardware and mapping
