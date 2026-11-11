@@ -16,3 +16,6 @@ venv
 
 # build
 .build
+
+# ESP and arduino flash serial-id config
+.flash_env
