@@ -12,5 +12,10 @@ Code/DoublePendulum/run_logs/
 venv
 
 # uv package manager
-
 .uv-cache
+
+# build
+.build
+
+# ESP and arduino flash serial-id config
+.flash_env
