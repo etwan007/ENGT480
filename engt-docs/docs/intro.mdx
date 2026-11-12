@@ -1,8 +1,12 @@
 ---
+title: Project documentation
 sidebar_position: 1
+description: Guides for the ENGT 480 inverted pendulum project.
 ---
 
-# Intro To Project
+# Project Documentation
+
+This documents the project repository, its pendulum controllers, firmware, and hardware.
 
 import DocCardList from "@theme/DocCardList";
 
@@ -10,21 +14,30 @@ import DocCardList from "@theme/DocCardList";
     items={[
         {
             type: "category",
-            label: "Getting Started",
+            label: "Project overview",
             href: "/docs/project-base",
-            description: "Getting started guide",
+            description:
+                "Repository, team workflow, and Raspberry Pi operations.",
         },
         {
             type: "category",
-            label: "Firmware Config",
+            label: "Controllers and run data",
+            href: "/docs/project-control",
+            description:
+                "Pendulum controllers, shared Python code, and run review.",
+        },
+        {
+            type: "category",
+            label: "Firmware and protocols",
             href: "/docs/project-firmware",
-            description: "Firmware Config and Flash",
+            description:
+                "Sensor receiver protocol and retained transmitter firmware.",
         },
         {
             type: "category",
-            label: "Hardware Config",
+            label: "Hardware and wiring",
             href: "/docs/project-hardware",
-            description: "Hardware Config and Wiring",
+            description: "Project hardware references and wiring diagram.",
         },
     ]}
 />
