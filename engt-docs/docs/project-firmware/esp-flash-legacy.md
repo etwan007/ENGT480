@@ -2,6 +2,7 @@
 title: Flash the Legacy ESP32-C3 Transmitters
 description: Build and flash the ENGT 480 legacy TX1 and TX2 sensor firmware.
 sidebar_label: Legacy ESP32-C3 Flashing
+sidebar_position: 4
 ---
 
 # Flash the Legacy ESP32-C3 Transmitters
