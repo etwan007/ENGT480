@@ -115,7 +115,7 @@ const config: Config = {
           title: 'More',
           items: [
             {
-              label: 'GitHub',
+              label: 'Project GitHub Repository',
               href: 'https://github.com/etwan007/ENGT480',
             },
           ],
