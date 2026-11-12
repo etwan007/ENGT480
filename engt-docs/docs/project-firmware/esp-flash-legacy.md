@@ -1,17 +1,18 @@
 ---
-title: Flash the Legacy ESP32-C3 Transmitters
-description: Build and flash the ENGT 480 legacy TX1 and TX2 sensor firmware.
-sidebar_label: Legacy ESP32-C3 Flashing
+description: Build and flash the legacy TX1 and TX2 sensor firmware.
+sidebar_position: 10
 ---
 
-# Flash the Legacy ESP32-C3 Transmitters
+# Flash Firmware to Wireless Sensors (legacy)
 
 This procedure builds and flashes the legacy wireless transmitter firmware used by the ENGT 480 angle-sensor system. It covers the two transmitter configurations, **TX1** and **TX2**, which run on Seeed XIAO ESP32-C3 boards.
 
 The firmware source is in [`Code/Wireless/Transmitters/`](https://github.com/etwan007/ENGT480/tree/main/Code/Wireless/Transmitters). The repository scripts build both transmitter images and flash one selected sensor at a time.
 
-:::warning Legacy firmware
+:::warning[Legacy firmware]
+
 This page documents the retained ESP-NOW transmitter path, which sends the established three-byte angle packet. New software that communicates with Sensor Server should use the shared Sensor Client API. The receiver's newer serial framing does not change the transmitter radio packet, so that receiver update alone does not require reflashing TX1 or TX2. See the [receiver protocol notes](https://github.com/etwan007/ENGT480/blob/main/Code/Wireless/ANGLE_PROTOCOL.md) before changing receiver or controller firmware.
+
 :::
 
 ## Hardware and mapping
@@ -88,8 +89,10 @@ Connect only the transmitter you intend to program, then run the command for its
 
 The script validates the selected serial path and checks for a complete set of firmware images. If `firmware.factory.bin` exists for the selected target, it is written at address `0x0`. Otherwise, the script writes the bootloader, partition table, and application at `0x0`, `0x8000`, and `0x10000`, respectively. It targets the ESP32-C3 explicitly.
 
-:::danger Protect the rig during programming
+:::danger[Protect the rig during programming]
+
 Turn motor power off before connecting or flashing a sensor board. Keep the controller stopped while programming. Flash one board at a time and verify which sensor is connected before selecting `sensor_1` or `sensor_2`.
+
 :::
 
 ## Verify the flash
@@ -116,10 +119,3 @@ The transmitter build script creates separate TX1 and TX2 firmware images. Flash
 | esptool was not found | Run `./Tools/mcu-build/setup-pio.sh`, or install esptool in a way that makes it available to the flash script. |
 | Port permission denied or busy | Close programs using the port and grant the current user access to the serial device. |
 | Flash cannot connect to the chip | Check the USB data cable and connection. Confirm the board is an ESP32-C3 and retry with the board attached directly to the computer. |
-
-## Firmware and protocol references
-
-- [Transmitter source and PlatformIO configuration](https://github.com/etwan007/ENGT480/tree/main/Code/Wireless/Transmitters)
-- [Legacy build script](https://github.com/etwan007/ENGT480/blob/main/Tools/mcu-build/build-tx-legacy.sh)
-- [Legacy flash script](https://github.com/etwan007/ENGT480/blob/main/Tools/mcu-flash/flash-tx-legacy.sh)
-- [Receiver protocol and deployment notes](https://github.com/etwan007/ENGT480/blob/main/Code/Wireless/ANGLE_PROTOCOL.md)
