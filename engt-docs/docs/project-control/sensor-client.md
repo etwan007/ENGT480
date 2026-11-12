@@ -1,7 +1,7 @@
 ---
 title: Sensor Client API
 description: Async Python client for subscribing to Sensor Server readings.
-sidebar_position: 5
+sidebar_position: 10
 ---
 
 # Sensor Client API

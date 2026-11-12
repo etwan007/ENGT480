@@ -1,7 +1,7 @@
 ---
 title: Sensor Server data format
 description: WebSocket messages, subscriptions, timestamps, and sensor readings.
-sidebar_position: 6
+sidebar_position: 10
 ---
 
 # Sensor Server WebSocket API
