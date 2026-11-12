@@ -18,7 +18,6 @@ ENGT480/
 |-- engt-docs/                   # project documentation
 |-- MATLAB Simulation/           # MATLAB scripts and Simulink model files
 |-- Tools/                       # Project utilities, including Pi automation
-`-- Wiring/                      # Wiring diagrams
 ```
 
 ## Code areas
