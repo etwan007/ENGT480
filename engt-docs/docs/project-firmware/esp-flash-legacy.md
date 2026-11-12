@@ -90,8 +90,10 @@ Connect only the transmitter you intend to program, then run the command for its
 
 The script validates the selected serial path and checks for a complete set of firmware images. If `firmware.factory.bin` exists for the selected target, it is written at address `0x0`. Otherwise, the script writes the bootloader, partition table, and application at `0x0`, `0x8000`, and `0x10000`, respectively. It targets the ESP32-C3 explicitly.
 
-:::danger Protect the rig during programming
+:::danger[Protect the rig during programming]
+
 Turn motor power off before connecting or flashing a sensor board. Keep the controller stopped while programming. Flash one board at a time and verify which sensor is connected before selecting `sensor_1` or `sensor_2`.
+
 :::
 
 ## Verify the flash
