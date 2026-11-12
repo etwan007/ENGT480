@@ -124,8 +124,8 @@ const config: Config = {
       copyright: `Copyright © ${new Date().getFullYear()} ENGT 2026`,
     },
     prism: {
-      theme: prismThemes.github,
-      darkTheme: prismThemes.dracula,
+      theme: prismThemes.vsDark,
+      darkTheme: prismThemes.vsDark,
       additionalLanguages: ['bash', 'toml', 'json'],
     },
   } satisfies Preset.ThemeConfig,

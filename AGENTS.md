@@ -15,7 +15,7 @@ ENGT480/
 |   |-- ArduinoSlave/            # Arduino motor-control firmware
 |   |-- Old_Code/                # Retained historical code
 |   `-- RunReview/               # Run-log visualizer and example data
-|-- GeneralDocumentation/        # Repository workflow and Raspberry Pi automation guides
+|-- engt-docs/                   # project documentation
 |-- MATLAB Simulation/           # MATLAB scripts and Simulink model files
 |-- Tools/                       # Project utilities, including Pi automation
 `-- Wiring/                      # Wiring diagrams
@@ -35,9 +35,13 @@ ENGT480/
 
 - `MATLAB Simulation/` holds MATLAB and Simulink models for controller design and simulation.
 - `Wiring/` holds the project's wiring diagram.
-- `GeneralDocumentation/` holds repository and Raspberry Pi workflow documentation.
-- `Tools/PiAutomation/` contains Raspberry Pi synchronization and automation utilities.
+- `engt-docs/` documentation for this project.
+- `Tools/` Tool for build firmware and sync data on Raspberry Pi
 
 ## Python package management
 
 The project uses `uv` to manage Python dependencies and environments. Python dependencies are declared in each project's `pyproject.toml`; use its `uv.lock` when present to reproduce the locked environment. Run `uv` commands from the corresponding project directory.
+
+## Documentation
+
+This project keep all documentation in `engt-docs`.
