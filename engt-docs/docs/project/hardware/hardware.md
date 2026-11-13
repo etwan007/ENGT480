@@ -18,7 +18,7 @@ in their respective sections.
         {
             type: "link",
             label: "Device wiring diagram",
-            href: "/docs/project-hardware/device-wiring",
+            href: "/docs/project/hardware/device-wiring",
             description: "Project circuit diagram and hardware wiring reference.",
         },
     ]}
