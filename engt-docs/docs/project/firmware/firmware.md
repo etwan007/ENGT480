@@ -3,7 +3,7 @@ description: Receiver protocol, transmitter diagnostics, and legacy firmware too
 sidebar_position: 1
 ---
 
-# Firmware and sensor protocols
+# Firmware and Sensor
 
 import DocCardList from '@theme/DocCardList';
 

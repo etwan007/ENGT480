@@ -90,7 +90,7 @@ const config: Config = {
           type: 'docSidebar',
           sidebarId: 'tutorialSidebar',
           position: 'left',
-          label: 'Tutorial',
+          label: 'Project Documentation',
         },
         {
           href: 'https://github.com/etwan007/ENGT480',
@@ -106,8 +106,20 @@ const config: Config = {
           title: 'Docs',
           items: [
             {
-              label: 'Intro To Project',
-              to: '/docs/intro',
+              label: 'Project Overview',
+              to: '/docs/project/base/',
+            },
+            {
+              label: 'Controllers and run data',
+              to: '/docs/project/control/',
+            },
+            {
+              label: 'Firmware and Sensor',
+              to: '/docs/project/firmware/',
+            },
+            {
+              label: 'Hardware References',
+              to: '/docs/project/hardware/',
             },
           ],
         },
