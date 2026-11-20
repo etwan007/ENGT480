@@ -24,8 +24,12 @@ case "${1:-}" in
         sensor_port="${sensor_2:-}"
         transmitter_id="tx2"
         ;;
+    sensor_3)
+        sensor_port="${sensor_2:-}"
+        transmitter_id="tx2"
+        ;;
     *)
-        echo "Usage: $0 sensor_1|sensor_2" >&2
+        echo "Usage: $0 sensor_1|sensor_2|sensor_3" >&2
         exit 2
         ;;
 esac
