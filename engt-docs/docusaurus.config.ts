@@ -93,6 +93,12 @@ const config: Config = {
           label: 'Project Documentation',
         },
         {
+          type: 'docSidebar',
+          sidebarId: 'devSidebar',
+          position: 'left',
+          label: 'Developer Documentation',
+        },
+        {
           href: 'https://github.com/etwan007/ENGT480',
           label: 'GitHub',
           position: 'right',
